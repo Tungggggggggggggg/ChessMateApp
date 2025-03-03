@@ -1,9 +1,9 @@
-# ChessMate App (Cờ Vua)
+# ChessMate (Cờ Vua)
 
 ## 📌 Chọn đề tài, lên ý tưởng, nghiên cứu và phân tích
 
 ### 🏆 Đề tài
-Ứng dụng **ChessMate App (Cờ Vua)**
+Ứng dụng **ChessMate (Cờ Vua)**
 
 ### 📖 Mô tả
 Ứng dụng cờ vua được phát triển trên nền tảng **Android**, sử dụng ngôn ngữ lập trình **Kotlin** và môi trường phát triển **Android Studio**. Ứng dụng cung cấp một trải nghiệm chơi cờ vua hoàn chỉnh với các tính năng:
