@@ -1,4 +1,4 @@
-package com.example.chessmate
+package com.example.chessmate.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
+import com.example.chessmate.R
 
 @Composable
 fun Logo(modifier: Modifier = Modifier) {
