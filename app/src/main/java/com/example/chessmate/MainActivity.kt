@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.example.chessmate.ui.theme.ChessmateTheme
 import androidx.compose.foundation.background
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ChessmateScreen() {
+    // Tạo giao diện chính với nền và các thành phần chính
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -46,15 +48,15 @@ fun ChessmateScreen() {
                 .background(colorResource(id = R.color.color_c97c5d))
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 32.dp),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
-                Logo()
-                Spacer(modifier = Modifier.height(32.dp))
-                ButtonRow()
+                Logo() // Hiển thị logo và tiêu đề
+                Spacer(modifier = Modifier.height(20.dp))
+                ButtonRow() // Hiển thị các nút và text cho các tùy chọn
+                Spacer(modifier = Modifier.height(20.dp))
+                Chessboard() // Hiển thị bàn cờ
             }
         }
     }
@@ -62,28 +64,56 @@ fun ChessmateScreen() {
 
 @Composable
 fun ButtonRow() {
+    // Tạo hai hàng chứa các nút và text cho các tùy chọn
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
+        // Hàng 1: Nút Đăng nhập, Text Online, Nút Đăng ký
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             ButtonItem("Đăng nhập", R.color.color_c89f9c)
-            ButtonItem("Online", R.color.color_c97c5d)
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(45.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Online",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
             ButtonItem("Đăng ký", R.color.color_c89f9c)
         }
+        // Hàng 2: Nút Đấu với AI, Text Offline, Nút Đấu với bạn
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             ButtonItem("Đấu với AI", R.color.color_c89f9c)
-            ButtonItem("Offline", R.color.color_c97c5d)
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(45.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Offline",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
             ButtonItem("Đấu với bạn", R.color.color_c89f9c)
         }
     }
@@ -91,27 +121,25 @@ fun ButtonRow() {
 
 @Composable
 fun ButtonItem(text: String, colorId: Int) {
+    // Tạo nút với văn bản và màu nền tùy chỉnh
     Button(
         onClick = { },
         modifier = Modifier
-            .width(125.dp)
-            .height(55.dp),
+            .width(120.dp)
+            .height(45.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = colorId))
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text(
-                text = text,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-            )
-        }
+        Text(
+            text = text,
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center
+        )
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewMainActivity() {
