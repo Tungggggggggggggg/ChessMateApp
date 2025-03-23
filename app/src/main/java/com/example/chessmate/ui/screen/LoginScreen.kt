@@ -3,9 +3,11 @@ package com.example.chessmate.ui.screen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -176,6 +178,8 @@ fun LoginForm(
                 fontWeight = FontWeight.Bold
             )
         }
+        Spacer(modifier = Modifier.padding(bottom = 4.dp))
+
     }
 }
 
@@ -185,18 +189,22 @@ fun LoginScreen(
     navController: NavController? = null,
     onBackClick: () -> Unit = { navController?.popBackStack() }
 ) {
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.ime)
             .navigationBarsPadding()
+            .windowInsetsPadding(WindowInsets.ime) // Đẩy nội dung khi bàn phím xuất hiện
     ) {
         Header(onBackClick = onBackClick)
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .background(colorResource(id = R.color.color_c97c5d)),
+                .background(colorResource(id = R.color.color_c97c5d))
+                .verticalScroll(scrollState), // Kích hoạt cuộn khi bàn phím xuất hiện
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
@@ -213,6 +221,7 @@ fun LoginScreen(
         }
     }
 }
+
 
 // Xem trước giao diện màn hình đăng nhập
 @Preview(showBackground = true)

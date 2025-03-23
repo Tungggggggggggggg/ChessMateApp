@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -252,8 +255,11 @@ fun RegisterForm(
                 fontSize = 20.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
+
             )
         }
+        Spacer(modifier = Modifier.padding(bottom = 4.dp))
+
     }
 }
 
@@ -263,6 +269,8 @@ fun RegisterScreen(
     navController: NavController? = null,
     onBackClick: () -> Unit = { navController?.popBackStack() }
 ) {
+
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -274,7 +282,8 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .background(colorResource(id = R.color.color_c97c5d)),
+                .background(colorResource(id = R.color.color_c97c5d))
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
