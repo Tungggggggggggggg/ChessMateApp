@@ -26,9 +26,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.chessmate.ui.components.Logo
 import com.example.chessmate.ui.theme.ChessmateTheme
 
-// Thanh tiêu đề với nút quay lại và tiêu đề "Đăng nhập"
+// Thanh tiêu đề với nút quay lại và tiêu đề "Đăng kí"
 @Composable
-fun Header(
+fun RegisterHeader(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -51,7 +51,7 @@ fun Header(
             )
         }
         Text(
-            text = "Đăng nhập",
+            text = "Đăng kí",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -63,14 +63,16 @@ fun Header(
     }
 }
 
-// Form nhập liệu với ô ID, mật khẩu và nút đăng nhập
+// Form nhập liệu với các ô Tên, ID, Mật khẩu, Xác nhận mật khẩu và nút đăng kí
 @Composable
-fun LoginForm(
+fun RegisterForm(
     modifier: Modifier = Modifier,
-    onLoginClick: () -> Unit
+    onRegisterClick: () -> Unit
 ) {
+    var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -81,6 +83,43 @@ fun LoginForm(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Ô nhập Tên
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Tên:",
+                fontSize = 20.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
+            )
+            BasicTextField(
+                value = name,
+                onValueChange = { name = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(colorResource(id = R.color.color_eee2df), shape = RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = Color.Black,
+                    fontSize = 16.sp
+                ),
+                decorationBox = { innerTextField ->
+                    if (name.isEmpty()) {
+                        Text(
+                            text = "Nhập tên ...",
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+        }
+
         // Ô nhập ID
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -118,7 +157,7 @@ fun LoginForm(
             )
         }
 
-        // Ô nhập mật khẩu
+        // Ô nhập Mật khẩu
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -157,11 +196,50 @@ fun LoginForm(
             )
         }
 
-        // Nút đăng nhập
+        // Ô nhập Xác nhận mật khẩu
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Xác nhận mật khẩu:",
+                fontSize = 20.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
+            )
+            BasicTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(colorResource(id = R.color.color_eee2df), shape = RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = Color.Black,
+                    fontSize = 16.sp
+                ),
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                decorationBox = { innerTextField ->
+                    if (confirmPassword.isEmpty()) {
+                        Text(
+                            text = "Xác nhận mật khẩu ...",
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+        }
+
+        // Nút đăng kí
         Button(
             onClick = {
                 keyboardController?.hide()
-                onLoginClick()
+                onRegisterClick()
             },
             modifier = Modifier
                 .fillMaxWidth(0.7f)
@@ -170,7 +248,7 @@ fun LoginForm(
             shape = RoundedCornerShape(20.dp)
         ) {
             Text(
-                text = "Đăng nhập",
+                text = "Đăng kí",
                 fontSize = 20.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
@@ -179,9 +257,9 @@ fun LoginForm(
     }
 }
 
-// Màn hình chính để đăng nhập
+// Màn hình chính để đăng kí
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     navController: NavController? = null,
     onBackClick: () -> Unit = { navController?.popBackStack() }
 ) {
@@ -191,7 +269,7 @@ fun LoginScreen(
             .windowInsetsPadding(WindowInsets.ime)
             .navigationBarsPadding()
     ) {
-        Header(onBackClick = onBackClick)
+        RegisterHeader(onBackClick = onBackClick)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -207,18 +285,18 @@ fun LoginScreen(
                     .wrapContentHeight()
             )
             Spacer(modifier = Modifier.height(20.dp))
-            LoginForm(
-                onLoginClick = {}
+            RegisterForm(
+                onRegisterClick = {}
             )
         }
     }
 }
 
-// Xem trước giao diện màn hình đăng nhập
+// Xem trước giao diện màn hình đăng kí
 @Preview(showBackground = true)
 @Composable
-fun PreviewLoginScreen() {
+fun PreviewRegisterScreen() {
     ChessmateTheme {
-        LoginScreen()
+        RegisterScreen()
     }
 }

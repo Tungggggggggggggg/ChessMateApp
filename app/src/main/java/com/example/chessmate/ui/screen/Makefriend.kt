@@ -1,124 +1,170 @@
 package com.example.chessmate.ui.screen
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.style.TextAlign
 import com.example.chessmate.R
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
+import com.example.chessmate.ui.components.Logo
 
+// Thanh tiêu đề với các biểu tượng tin nhắn và hồ sơ
 @Composable
-fun FindFriendsScreen() {
-    var searchQuery by remember { mutableStateOf(TextFieldValue()) }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFFCCCC)) // Màu header
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(painter = painterResource(id = R.drawable.message), contentDescription = "Messages")
-            Text("Tìm Bạn", fontSize = 20.sp, fontWeight = FontWeight.Bold )
-            Icon(painter = painterResource(id = R.drawable.profile), contentDescription = "Profile")
-        }
-
-        Column( // Phần còn lại của nội dung
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f) // Chiếm phần không gian còn lại
-                .background(Color(0xFFFF9966)) // Màu cam nhạt
-                .padding(16.dp),
-        ) {
-            // Back Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { /* TODO: Xử lý sự kiện back */ }) {
-                    Icon(painter = painterResource(id = R.drawable.ic_back), contentDescription = "Back")
-                }
-            }
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Logo and Title
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(painter = painterResource(id = R.drawable.logo), contentDescription = "Chess Logo")
-                /*Text("CHESSMATE", fontSize = 32.sp, textAlign = TextAlign.Center, color = Color.White)*/
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Search Bar
-            Row(
+fun Header(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colorResource(id = R.color.color_c89f9c))
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.width(20.dp))
+        // Biểu tượng tin nhắn với chấm đỏ thông báo
+        Box {
+            Image(
+                painter = painterResource(id = R.drawable.message),
+                contentDescription = "Tin nhắn",
+                modifier = Modifier.size(32.dp)
+            )
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color(0xFFFFCCCC), shape = RoundedCornerShape(25.dp)), // Bo góc và màu
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 16.dp, vertical = 8.dp), // Thêm padding cho text field
-                    singleLine = true,
-                    textStyle = TextStyle(color = Color.Black), // Màu chữ đen
-                    cursorBrush = SolidColor(Color.Black), // Màu con trỏ đen
-                    decorationBox = { innerTextField ->
-                        if (searchQuery.text.isEmpty()) {
-                            Text(
-                                text = "Nhập tên người chơi ...", // Placeholder
-                                color = Color.Gray,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        innerTextField()
-                    }
-                )
+                    .size(12.dp)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .align(Alignment.TopEnd)
+                    .clip(CircleShape)
+                    .background(Color.Red)
+            )
+        }
+        Text(
+            text = "Tìm Bạn",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .weight(1f)
+                .wrapContentWidth(Alignment.CenterHorizontally)
+        )
+        Image(
+            painter = painterResource(id = R.drawable.profile),
+            contentDescription = "Hồ sơ",
+            modifier = Modifier.size(32.dp)
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+    }
+}
 
-                Icon(painter = painterResource(id = R.drawable.search), contentDescription = "Search")
-
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Search Results
-            if (searchQuery.text.isNotEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Kết quả tìm kiếm:")
-                    // TODO: Thêm danh sách bạn bè nếu có
-                }
-            }
+// Nút quay lại
+@Composable
+fun BackButton(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = {}) {
+            Image(
+                painter = painterResource(id = R.drawable.back),
+                contentDescription = "Quay lại",
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
 
+// Thanh tìm kiếm với ô nhập tên người chơi và biểu tượng kính lúp
+@Composable
+fun SearchBar(
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .padding(horizontal = 16.dp)
+            .background(
+                colorResource(id = R.color.color_c89f9c),
+                shape = RoundedCornerShape(25.dp)
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BasicTextField(
+            value = "",
+            onValueChange = { },
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp),
+            singleLine = true,
+            textStyle = TextStyle(
+                color = Color.Black,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            cursorBrush = SolidColor(Color.Black),
+            decorationBox = { innerTextField ->
+                Text(
+                    text = "Nhập tên người chơi ...",
+                    color = Color.Gray,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                innerTextField()
+            }
+        )
+        Image(
+            painter = painterResource(id = R.drawable.search),
+            contentDescription = "Tìm kiếm",
+            modifier = Modifier
+                .size(36.dp)
+                .padding(end = 8.dp)
+        )
+    }
+}
+
+// Màn hình chính để tìm bạn
+@Composable
+fun FindFriendsScreen() {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Header()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(colorResource(id = R.color.color_c97c5d))
+                .padding(16.dp),
+        ) {
+            BackButton()
+            Logo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            SearchBar()
+        }
+    }
+}
+
+// Xem trước giao diện màn hình tìm bạn
 @Preview(showBackground = true)
 @Composable
 fun FindFriendsScreenPreview() {

@@ -13,9 +13,4 @@
     <color name="color_c89f9c">#C89F9C</color>
     <color name="color_c97c5d">#C97C5D</color>
     <color name="color_b36a5e">#B36A5E</color>
-
-    <color name="board_border">#8B4513</color> <!-- Màu nâu đậm -->
-    <color name="dark_square">#769656</color>   <!-- Màu ô tối bàn cờ -->
-    <color name="background_light">#F0F0F0</color> <!-- Màu nền sáng -->
-
 </resources>

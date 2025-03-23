@@ -21,8 +21,7 @@ import com.example.chessmate.ui.theme.ChessmateTheme
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.Logo
 
-
-
+// Màn hình chính với logo, các nút và bàn cờ
 @Composable
 fun HomeScreen(navController: NavController) {
     Scaffold(
@@ -41,16 +40,19 @@ fun HomeScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
+                // Logo ứng dụng
                 Logo()
                 Spacer(modifier = Modifier.height(20.dp))
                 ButtonRow(navController)
                 Spacer(modifier = Modifier.height(20.dp))
+                // Bàn cờ
                 Chessboard()
             }
         }
     }
 }
 
+// Các hàng nút điều hướng và trạng thái online/offline
 @Composable
 fun ButtonRow(navController: NavController) {
     Column(
@@ -58,16 +60,21 @@ fun ButtonRow(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
+        // Hàng 1: Nút Đăng nhập, Text Online, Nút Đăng ký
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ButtonItem("Đăng nhập", R.color.color_c89f9c) {
-                navController.navigate("login")
-            }
+            ButtonItem(
+                text = "Đăng nhập",
+                colorId = R.color.color_c89f9c,
+                onClick = { navController.navigate("login") }
+            )
             Box(
-                modifier = Modifier.width(120.dp).height(45.dp),
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(45.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -78,21 +85,26 @@ fun ButtonRow(navController: NavController) {
                     textAlign = TextAlign.Center
                 )
             }
-            ButtonItem("Đăng ký", R.color.color_c89f9c) {
-                navController.navigate("register")
-            }
+            ButtonItem(
+                text = "Đăng ký",
+                colorId = R.color.color_c89f9c,
+                onClick = { navController.navigate("register") }
+            )
         }
-
+        // Hàng 2: Nút Đấu với AI, Text Offline, Nút Đấu với bạn
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ButtonItem("Đấu với AI", R.color.color_c89f9c) {
-                navController.navigate("ai_game")
-            }
+            ButtonItem(
+                text = "Đấu với AI",
+                colorId = R.color.color_c89f9c
+            )
             Box(
-                modifier = Modifier.width(120.dp).height(45.dp),
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(45.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -103,13 +115,15 @@ fun ButtonRow(navController: NavController) {
                     textAlign = TextAlign.Center
                 )
             }
-            ButtonItem("Đấu với bạn", R.color.color_c89f9c) {
-                navController.navigate("friend_game")
-            }
+            ButtonItem(
+                text = "Đấu với bạn",
+                colorId = R.color.color_c89f9c
+            )
         }
     }
 }
 
+// Xem trước giao diện màn hình chính
 @Preview(showBackground = true)
 @Composable
 fun PreviewHomeScreen() {

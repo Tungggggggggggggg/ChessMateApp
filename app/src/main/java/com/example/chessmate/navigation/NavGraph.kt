@@ -6,11 +6,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.chessmate.ui.screen.HomeScreen
 import com.example.chessmate.ui.screen.LoginScreen
+import com.example.chessmate.ui.screen.RegisterScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
         composable("login") { LoginScreen(navController) }
+        composable("register") { RegisterScreen(navController) }
     }
 }

@@ -11,46 +11,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.chessmate.R
-
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun Chessboard(modifier: Modifier = Modifier) {
+    // Tạo bàn cờ với các nhãn số và chữ
     Column(
         modifier = modifier
-            .border(5.dp, colorResource(id = R.color.board_border))
+            .wrapContentSize(Alignment.Center)
+            .border(5.dp, colorResource(id = R.color.color_c89f9c))
             .padding(5.dp)
     ) {
-        // Thanh viền trên bàn cờ
+        // Khoảng trống phía trên bàn cờ
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .background(colorResource(id = R.color.board_border))
+                .size(width = 360.dp, height = 20.dp)
+                .background(colorResource(id = R.color.color_c89f9c))
         ) {}
 
         // Hàng chứa bàn cờ và nhãn số bên phải
         Row {
-            // Nhãn số (1-8) bên trái
-            Column {
-                for (row in 7 downTo 0) {
-                    Box(
-                        modifier = Modifier
-                            .size(width = 20.dp, height = 40.dp)
-                            .background(colorResource(id = R.color.board_border)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${row + 1}",
-                            fontSize = 14.sp,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
+            // Khoảng trống bên trái bàn cờ
+            Column(
+                modifier = Modifier
+                    .size(width = 20.dp, height = 320.dp)
+                    .background(colorResource(id = R.color.color_c89f9c))
+            ) {}
 
             // Tạo bàn cờ 8x8
             Column {
@@ -61,7 +51,7 @@ fun Chessboard(modifier: Modifier = Modifier) {
                             val squareColor = if (isWhiteSquare) {
                                 Color.White
                             } else {
-                                colorResource(id = R.color.dark_square)
+                                colorResource(id = R.color.color_b36a5e)
                             }
 
                             Box(
@@ -70,10 +60,10 @@ fun Chessboard(modifier: Modifier = Modifier) {
                                     .background(squareColor),
                                 contentAlignment = Alignment.Center
                             ) {
-                                val pieceRes = getPieceAtPosition(row, col)
-                                pieceRes?.let {
+                                val piece = getPieceAtPosition(row, col)
+                                if (piece != null) {
                                     Image(
-                                        painter = painterResource(id = it),
+                                        painter = painterResource(id = piece),
                                         contentDescription = null,
                                         modifier = Modifier.size(32.dp)
                                     )
@@ -90,13 +80,14 @@ fun Chessboard(modifier: Modifier = Modifier) {
                     Box(
                         modifier = Modifier
                             .size(width = 20.dp, height = 40.dp)
-                            .background(colorResource(id = R.color.board_border)),
+                            .background(colorResource(id = R.color.color_c89f9c)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "${row + 1}",
                             fontSize = 14.sp,
-                            color = Color.White
+                            color = Color.White,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -109,7 +100,7 @@ fun Chessboard(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .size(width = 20.dp, height = 20.dp)
-                    .background(colorResource(id = R.color.board_border))
+                    .background(colorResource(id = R.color.color_c89f9c))
             )
 
             // Nhãn chữ A-H
@@ -118,13 +109,14 @@ fun Chessboard(modifier: Modifier = Modifier) {
                 Box(
                     modifier = Modifier
                         .size(width = 40.dp, height = 20.dp)
-                        .background(colorResource(id = R.color.board_border)),
+                        .background(colorResource(id = R.color.color_c89f9c)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = letter,
                         fontSize = 14.sp,
-                        color = Color.White
+                        color = Color.White,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -133,7 +125,7 @@ fun Chessboard(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .size(width = 20.dp, height = 20.dp)
-                    .background(colorResource(id = R.color.board_border))
+                    .background(colorResource(id = R.color.color_c89f9c))
             )
         }
     }
@@ -141,22 +133,28 @@ fun Chessboard(modifier: Modifier = Modifier) {
 
 @Composable
 fun getPieceAtPosition(row: Int, col: Int): Int? {
+    // Xác định vị trí và trả về quân cờ tương ứng
+    val adjustedCol = 7 - col
+
     return when {
-        row == 0 && (col == 0 || col == 7) -> R.drawable.white_rook
-        row == 0 && (col == 1 || col == 6) -> R.drawable.white_knight
-        row == 0 && (col == 2 || col == 5) -> R.drawable.white_bishop
-        row == 0 && col == 3 -> R.drawable.white_queen
-        row == 0 && col == 4 -> R.drawable.white_king
+        // Quân trắng (hàng 1 và 2)
+        row == 0 && (adjustedCol == 0 || adjustedCol == 7) -> R.drawable.white_rook
+        row == 0 && (adjustedCol == 1 || adjustedCol == 6) -> R.drawable.white_knight
+        row == 0 && (adjustedCol == 2 || adjustedCol == 5) -> R.drawable.white_bishop
+        row == 0 && adjustedCol == 3 -> R.drawable.white_king
+        row == 0 && adjustedCol == 4 -> R.drawable.white_queen
         row == 1 -> R.drawable.white_pawn
-        row == 7 && (col == 0 || col == 7) -> R.drawable.black_rook
-        row == 7 && (col == 1 || col == 6) -> R.drawable.black_knight
-        row == 7 && (col == 2 || col == 5) -> R.drawable.black_bishop
-        row == 7 && col == 3 -> R.drawable.black_queen
-        row == 7 && col == 4 -> R.drawable.black_king
+        // Quân đen (hàng 7 và 8)
+        row == 7 && (adjustedCol == 0 || adjustedCol == 7) -> R.drawable.black_rook
+        row == 7 && (adjustedCol == 1 || adjustedCol == 6) -> R.drawable.black_knight
+        row == 7 && (adjustedCol == 2 || adjustedCol == 5) -> R.drawable.black_bishop
+        row == 7 && adjustedCol == 3 -> R.drawable.black_king
+        row == 7 && adjustedCol == 4 -> R.drawable.black_queen
         row == 6 -> R.drawable.black_pawn
         else -> null
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewChessboard() {
