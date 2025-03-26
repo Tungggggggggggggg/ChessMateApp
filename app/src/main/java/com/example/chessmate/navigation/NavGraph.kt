@@ -7,6 +7,11 @@ import androidx.navigation.compose.composable
 import com.example.chessmate.ui.screen.HomeScreen
 import com.example.chessmate.ui.screen.LoginScreen
 import com.example.chessmate.ui.screen.RegisterScreen
+import com.example.chessmate.ui.screen.ProfileScreen
+import com.example.chessmate.ui.screen.FindFriendsScreen
+import com.example.chessmate.ui.screen.LoadingScreen
+import com.example.chessmate.ui.screen.ResetPasswordScreen
+import com.example.chessmate.ui.screen.PlayScreen
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -14,5 +19,10 @@ fun NavGraph(navController: NavHostController) {
         composable("home") { HomeScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("register") { RegisterScreen(navController) }
+        composable("profile") { ProfileScreen(navController) }
+        composable("find_friends") { FindFriendsScreen(navController) }
+        composable("loading") { LoadingScreen() }
+        composable("reset_password") { ResetPasswordScreen(navController) }
+        composable("play") { PlayScreen(navController) }
     }
 }

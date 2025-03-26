@@ -1,14 +1,10 @@
 package com.example.chessmate.ui.screen
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,8 +15,6 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -29,9 +23,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.chessmate.ui.components.Logo
 import com.example.chessmate.ui.theme.ChessmateTheme
 
-// Thanh tiêu đề với nút quay lại và tiêu đề "Đăng nhập"
+// Thanh tiêu đề với nút quay lại và tiêu đề "Quên mật khẩu"
 @Composable
-fun Header(
+fun ForgotPasswordHeader(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -54,7 +48,7 @@ fun Header(
             )
         }
         Text(
-            text = "Đăng nhập",
+            text = "Quên mật khẩu",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -66,15 +60,13 @@ fun Header(
     }
 }
 
-// Form nhập liệu với ô ID, mật khẩu và nút đăng nhập
+// Form nhập email hoặc ID để khôi phục mật khẩu
 @Composable
-fun LoginForm(
+fun ForgotPasswordForm(
     modifier: Modifier = Modifier,
-    onLoginClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit = {}
+    onSubmitClick: (String) -> Unit // Truyền email hoặc ID khi gửi
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var emailOrId by remember { mutableStateOf("") }
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -85,19 +77,19 @@ fun LoginForm(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Ô nhập ID
+        // Ô nhập email hoặc ID
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "ID:",
+                text = "Email hoặc ID:",
                 fontSize = 20.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
             )
             BasicTextField(
-                value = username,
-                onValueChange = { username = it },
+                value = emailOrId,
+                onValueChange = { emailOrId = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
@@ -109,9 +101,9 @@ fun LoginForm(
                     fontSize = 16.sp
                 ),
                 decorationBox = { innerTextField ->
-                    if (username.isEmpty()) {
+                    if (emailOrId.isEmpty()) {
                         Text(
-                            text = "Nhập ID ...",
+                            text = "Nhập email hoặc ID ...",
                             color = Color.Gray,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
@@ -122,50 +114,11 @@ fun LoginForm(
             )
         }
 
-        // Ô nhập mật khẩu
-        Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                text = "Mật khẩu:",
-                fontSize = 20.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-            BasicTextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .background(colorResource(id = R.color.color_eee2df), shape = RoundedCornerShape(20.dp))
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                singleLine = true,
-                textStyle = TextStyle(
-                    color = Color.Black,
-                    fontSize = 16.sp
-                ),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                decorationBox = { innerTextField ->
-                    if (password.isEmpty()) {
-                        Text(
-                            text = "Nhập mật khẩu ...",
-                            color = Color.Gray,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    innerTextField()
-                }
-            )
-        }
-
-        // Nút đăng nhập
+        // Nút gửi mã khôi phục
         Button(
             onClick = {
                 keyboardController?.hide()
-                onLoginClick()
+                onSubmitClick(emailOrId)
             },
             modifier = Modifier
                 .fillMaxWidth(0.7f)
@@ -174,50 +127,33 @@ fun LoginForm(
             shape = RoundedCornerShape(20.dp)
         ) {
             Text(
-                text = "Đăng nhập",
+                text = "Gửi mã khôi phục",
                 fontSize = 20.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
         }
-
-        // Văn bản "Quên mật khẩu?" với khả năng nhấn
-        Text(
-            text = "Quên mật khẩu?",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentWidth(Alignment.CenterHorizontally)
-                .clickable { onForgotPasswordClick() }
-        )
-        Spacer(modifier = Modifier.padding(bottom = 4.dp))
-
     }
 }
 
-// Màn hình chính để đăng nhập
+// Màn hình chính để khôi phục mật khẩu
 @Composable
-fun LoginScreen(
+fun ForgotPasswordScreen(
     navController: NavController? = null,
     onBackClick: () -> Unit = { navController?.popBackStack() }
 ) {
-    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.ime)
             .navigationBarsPadding()
-            .windowInsetsPadding(WindowInsets.ime)
     ) {
-        Header(onBackClick = onBackClick)
+        ForgotPasswordHeader(onBackClick = onBackClick)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .background(colorResource(id = R.color.color_c97c5d))
-                .verticalScroll(scrollState),
+                .background(colorResource(id = R.color.color_c97c5d)),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
@@ -228,19 +164,22 @@ fun LoginScreen(
                     .wrapContentHeight()
             )
             Spacer(modifier = Modifier.height(20.dp))
-            LoginForm(
-                onLoginClick = {},
-                onForgotPasswordClick = { navController?.navigate("forgot_password") }
+            ForgotPasswordForm(
+                onSubmitClick = { emailOrId ->
+                    // Giả lập gửi mã khôi phục
+                    // TODO: Tích hợp với backend để gửi email chứa mã khôi phục
+                    navController?.navigate("reset_password")
+                }
             )
         }
     }
 }
 
-// Xem trước giao diện màn hình đăng nhập
+// Xem trước giao diện màn hình khôi phục mật khẩu
 @Preview(showBackground = true)
 @Composable
-fun PreviewLoginScreen() {
+fun ForgotPasswordScreenPreview() {
     ChessmateTheme {
-        LoginScreen()
+        ForgotPasswordScreen()
     }
 }

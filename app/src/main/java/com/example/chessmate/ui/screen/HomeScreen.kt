@@ -8,11 +8,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.chessmate.R
@@ -60,7 +58,7 @@ fun ButtonRow(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Hàng 1: Nút Đăng nhập, Text Online, Nút Đăng ký
+        // Hàng 1: Nút Đăng nhập, Nút Đăng ký
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
@@ -71,27 +69,14 @@ fun ButtonRow(navController: NavController) {
                 colorId = R.color.color_c89f9c,
                 onClick = { navController.navigate("login") }
             )
-            Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(45.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Online",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
+            Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
                 text = "Đăng ký",
                 colorId = R.color.color_c89f9c,
                 onClick = { navController.navigate("register") }
             )
         }
-        // Hàng 2: Nút Đấu với AI, Text Offline, Nút Đấu với bạn
+        // Hàng 2: Nút Đấu với AI, Nút Đấu với bạn
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
@@ -101,20 +86,7 @@ fun ButtonRow(navController: NavController) {
                 text = "Đấu với AI",
                 colorId = R.color.color_c89f9c
             )
-            Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(45.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Offline",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
+            Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
                 text = "Đấu với bạn",
                 colorId = R.color.color_c89f9c

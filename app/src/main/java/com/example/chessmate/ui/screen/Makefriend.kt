@@ -22,11 +22,13 @@ import androidx.compose.ui.unit.sp
 import com.example.chessmate.R
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.graphics.SolidColor
+import androidx.navigation.NavController
 import com.example.chessmate.ui.components.Logo
 
 // Thanh tiêu đề với các biểu tượng tin nhắn và hồ sơ
 @Composable
 fun Header(
+    navController: NavController, // Thêm navController để điều hướng
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -61,11 +63,17 @@ fun Header(
                 .weight(1f)
                 .wrapContentWidth(Alignment.CenterHorizontally)
         )
-        Image(
-            painter = painterResource(id = R.drawable.profile),
-            contentDescription = "Hồ sơ",
-            modifier = Modifier.size(32.dp)
-        )
+        // Biểu tượng hồ sơ
+        IconButton(
+            onClick = { navController.navigate("profile") }, // Điều hướng đến ProfileScreen
+            modifier = Modifier.size(40.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.profile),
+                contentDescription = "Hồ sơ",
+                modifier = Modifier.size(32.dp)
+            )
+        }
         Spacer(modifier = Modifier.width(20.dp))
     }
 }
@@ -73,6 +81,7 @@ fun Header(
 // Nút quay lại
 @Composable
 fun BackButton(
+    onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -81,7 +90,7 @@ fun BackButton(
             .padding(start = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = {}) {
+        IconButton(onClick = onBackClick) {
             Image(
                 painter = painterResource(id = R.drawable.back),
                 contentDescription = "Quay lại",
@@ -142,9 +151,11 @@ fun SearchBar(
 
 // Màn hình chính để tìm bạn
 @Composable
-fun FindFriendsScreen() {
+fun FindFriendsScreen(
+    navController: NavController // Thêm navController để điều hướng
+) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Header()
+        Header(navController = navController)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -152,7 +163,7 @@ fun FindFriendsScreen() {
                 .background(colorResource(id = R.color.color_c97c5d))
                 .padding(16.dp),
         ) {
-            BackButton()
+            BackButton(onBackClick = { navController.popBackStack() })
             Logo(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -168,5 +179,6 @@ fun FindFriendsScreen() {
 @Preview(showBackground = true)
 @Composable
 fun FindFriendsScreenPreview() {
-    FindFriendsScreen()
+    val navController = androidx.navigation.compose.rememberNavController()
+    FindFriendsScreen(navController)
 }
