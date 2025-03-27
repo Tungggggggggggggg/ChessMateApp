@@ -7,7 +7,7 @@
 
 ### 📖 Mô tả
 Ứng dụng cờ vua được phát triển trên nền tảng **Android**, sử dụng ngôn ngữ lập trình **Kotlin** và môi trường phát triển **Android Studio**. Ứng dụng cung cấp một trải nghiệm chơi cờ vua hoàn chỉnh với các tính năng:
-- ♟️ Chơi với **AI** ở nhiều cấp độ khó khác nhau.
+- ♟️ Chơi với **AI*[app](app)* ở nhiều cấp độ khó khác nhau.
 - 👥 Chơi với **bạn bè**.
 - 🎨 **Giao diện người dùng** trực quan, dễ sử dụng.
 - 📜 Hiển thị **lịch sử các nước đi**.
