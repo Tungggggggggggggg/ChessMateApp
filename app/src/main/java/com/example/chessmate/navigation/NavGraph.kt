@@ -10,6 +10,7 @@ import com.example.chessmate.ui.screen.RegisterScreen
 import com.example.chessmate.ui.screen.ProfileScreen
 import com.example.chessmate.ui.screen.FindFriendsScreen
 import com.example.chessmate.ui.screen.LoadingScreen
+import com.example.chessmate.ui.screen.MainScreen
 import com.example.chessmate.ui.screen.ResetPasswordScreen
 import com.example.chessmate.ui.screen.PlayScreen
 
@@ -24,5 +25,7 @@ fun NavGraph(navController: NavHostController) {
         composable("loading") { LoadingScreen() }
         composable("reset_password") { ResetPasswordScreen(navController) }
         composable("play") { PlayScreen(navController) }
+        composable("main_screen") { MainScreen(navController) }
+
     }
 }
