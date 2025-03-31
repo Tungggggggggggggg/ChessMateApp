@@ -2,6 +2,7 @@ package com.example.chessmate.ui.screen
 
 import android.app.Activity
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -67,24 +68,10 @@ fun Header(onBackClick: () -> Unit) {
 }
 
 @Composable
-fun InputField(value: String, onValueChange: (String) -> Unit, hint: String, isPassword: Boolean = false) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(hint) },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        textStyle = TextStyle(fontSize = 16.sp),
-        shape = RoundedCornerShape(20.dp),
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text)
-    )
-}
-
-@Composable
-fun LoginForm(onLoginClick: () -> Unit, onGoogleLoginClick: () -> Unit) {
-    var username by remember { mutableStateOf("") }
+fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> Unit) {
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(
@@ -92,26 +79,48 @@ fun LoginForm(onLoginClick: () -> Unit, onGoogleLoginClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        InputField(value = username, onValueChange = { username = it }, hint = "Email")
+        @Composable
+        fun InputField(value: String, onValueChange: (String) -> Unit, hint: String, isPassword: Boolean = false) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text(hint) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = TextStyle(fontSize = 16.sp),
+                shape = RoundedCornerShape(20.dp),
+                visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text)
+            )
+        }
+
+        InputField(value = email, onValueChange = { email = it }, hint = "Email")
         InputField(value = password, onValueChange = { password = it }, hint = "Mật khẩu", isPassword = true)
 
-
-        Text(
-            text = "Quên mật khẩu?",
-            modifier = Modifier.align(Alignment.End).clickable { /* Xử lý quên mật khẩu */ },
-            color = Color.White,
-            fontSize = 14.sp,
-            fontStyle = FontStyle.Italic,
-            textDecoration = TextDecoration.Underline,
-        )
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Blue,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
 
         Button(
-            onClick = { keyboardController?.hide(); onLoginClick() },
+            onClick = {
+                if (email.isBlank() || password.isBlank()) {
+                    errorMessage = "Vui lòng điền đầy đủ thông tin."
+                } else {
+                    errorMessage = ""
+                    keyboardController?.hide()
+                    onLoginClick(email, password)
+                }
+            },
             modifier = Modifier.fillMaxWidth(0.7f),
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c))
         ) { Text("Đăng nhập", fontSize = 20.sp) }
-
 
         Button(
             onClick = onGoogleLoginClick,
@@ -125,6 +134,7 @@ fun LoginForm(onLoginClick: () -> Unit, onGoogleLoginClick: () -> Unit) {
         }
     }
 }
+
 
 @Composable
 fun LoginScreen(navController: NavController? = null) {
@@ -143,6 +153,16 @@ fun LoginScreen(navController: NavController? = null) {
         }
     }
 
+    fun loginWithEmail(email: String, password: String) {
+        auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                navController?.navigate("main_screen")
+            } else {
+                Toast.makeText(context, "Đăng nhập thất bại. Kiểm tra lại tài khoản hoặc mật khẩu.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Header(onBackClick = { navController?.popBackStack() })
         Column(
@@ -152,7 +172,7 @@ fun LoginScreen(navController: NavController? = null) {
             Logo(modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(20.dp))
             LoginForm(
-                onLoginClick = {},
+                onLoginClick = { email, password -> loginWithEmail(email, password) },
                 onGoogleLoginClick = {
                     oneTapClient.beginSignIn(
                         BeginSignInRequest.builder()
