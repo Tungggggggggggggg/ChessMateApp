@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -62,7 +64,10 @@ fun Header(onBackClick: () -> Unit) {
             text = "Đăng nhập",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f)
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
         )
     }
 }
@@ -77,25 +82,69 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         @Composable
-        fun InputField(value: String, onValueChange: (String) -> Unit, hint: String, isPassword: Boolean = false) {
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                label = { Text(hint) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = TextStyle(fontSize = 16.sp),
-                shape = RoundedCornerShape(20.dp),
-                visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-                keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text)
-            )
+        fun InputField(
+            label: String,
+            value: String,
+            onValueChange: (String) -> Unit,
+            isPassword: Boolean = false,
+            placeholder: String
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = label,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(bottom = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colorResource(id = R.color.color_eee2df), shape = RoundedCornerShape(20.dp))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    if (value.isEmpty()) {
+                        Text(
+                            text = placeholder,
+                            fontSize = 16.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.align(Alignment.CenterStart)
+                        )
+                    }
+                    BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 16.sp, color = Color.Black),
+                        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+                        keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
 
-        InputField(value = email, onValueChange = { email = it }, hint = "Email")
-        InputField(value = password, onValueChange = { password = it }, hint = "Mật khẩu", isPassword = true)
+        InputField(label = "Email:", value = email, onValueChange = { email = it }, placeholder = "Nhập email ...")
+        InputField(label = "Mật khẩu:", value = password, onValueChange = { password = it }, isPassword = true,placeholder = "Nhập mật khẩu ...")
+
+        Text(
+            text = "Quên mật khẩu?",
+            fontSize = 14.sp,
+            fontStyle = FontStyle.Italic,
+            textDecoration = TextDecoration.Underline,
+            color = Color.Blue,
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(top = 4.dp)
+                .clickable {
+                    // TODO: Xử lý quên mật khẩu
+                }
+        )
 
         if (errorMessage.isNotEmpty()) {
             Text(
