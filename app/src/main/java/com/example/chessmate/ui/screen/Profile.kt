@@ -62,7 +62,9 @@ fun ProfileHeader(
 // Phần nội dung chính của màn hình hồ sơ
 @Composable
 fun ProfileContent(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMatchHistoryClick: () -> Unit = {},  // Callback cho nút Lịch sử trận đấu
+    onLogoutClick: () -> Unit = {}        // Callback cho nút Đăng xuất
 ) {
     Column(
         modifier = modifier
@@ -84,7 +86,7 @@ fun ProfileContent(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Các nút
+        // Các nút trên cùng
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -111,6 +113,42 @@ fun ProfileContent(
             ) {
                 Text(
                     text = "Đổi ảnh",
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Các nút mới: Lịch sử trận đấu và Đăng xuất
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = onMatchHistoryClick,
+                modifier = Modifier
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = "Lịch sử trận đấu",
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Button(
+                onClick = onLogoutClick,
+                modifier = Modifier
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    text = "Đăng xuất",
                     fontSize = 16.sp,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -174,14 +212,18 @@ fun ProfileInfoRow(
 @Composable
 fun ProfileScreen(
     navController: NavController? = null,
-    onBackClick: () -> Unit = { navController?.popBackStack() }
+    onBackClick: () -> Unit = { navController?.popBackStack() },
+    onMatchHistoryClick: () -> Unit = { navController?.navigate("match_history") },
+    onLogoutClick: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         ProfileHeader(onBackClick = onBackClick)
         ProfileContent(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            onMatchHistoryClick = onMatchHistoryClick,
+            onLogoutClick = onLogoutClick
         )
     }
 }
