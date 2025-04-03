@@ -6,21 +6,25 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.chessmate.DatabaseHelper
 import com.example.chessmate.R
 import com.example.chessmate.ui.theme.ChessmateTheme
+import androidx.compose.ui.tooling.preview.Preview
+import com.google.firebase.auth.FirebaseAuth
 
 // Thanh tiêu đề với nút quay lại và tiêu đề "Thông tin cá nhân"
 @Composable
@@ -63,8 +67,14 @@ fun ProfileHeader(
 @Composable
 fun ProfileContent(
     modifier: Modifier = Modifier,
-    onMatchHistoryClick: () -> Unit = {},  // Callback cho nút Lịch sử trận đấu
-    onLogoutClick: () -> Unit = {}        // Callback cho nút Đăng xuất
+    userData: Map<String, Any>? = null,
+    isEditing: Boolean = false,
+    description: String = "",
+    onDescriptionChange: (String) -> Unit = {},
+    onEditClick: () -> Unit = {},
+    onSaveClick: () -> Unit = {},
+    onMatchHistoryClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -91,14 +101,13 @@ fun ProfileContent(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Button(
-                onClick = { /* TODO: Xử lý sửa thông tin */ },
-                modifier = Modifier
-                    .height(50.dp),
+                onClick = if (isEditing) onSaveClick else onEditClick,
+                modifier = Modifier.height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Text(
-                    text = "Sửa thông tin",
+                    text = if (isEditing) "Lưu" else "Sửa thông tin",
                     fontSize = 16.sp,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -106,8 +115,7 @@ fun ProfileContent(
             }
             Button(
                 onClick = { /* TODO: Xử lý đổi ảnh */ },
-                modifier = Modifier
-                    .height(50.dp),
+                modifier = Modifier.height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
                 shape = RoundedCornerShape(20.dp)
             ) {
@@ -128,8 +136,7 @@ fun ProfileContent(
         ) {
             Button(
                 onClick = onMatchHistoryClick,
-                modifier = Modifier
-                    .height(50.dp),
+                modifier = Modifier.height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
                 shape = RoundedCornerShape(20.dp)
             ) {
@@ -142,8 +149,7 @@ fun ProfileContent(
             }
             Button(
                 onClick = onLogoutClick,
-                modifier = Modifier
-                    .height(50.dp),
+                modifier = Modifier.height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
                 shape = RoundedCornerShape(20.dp)
             ) {
@@ -167,15 +173,44 @@ fun ProfileContent(
                 .background(colorResource(id = R.color.color_eee2df))
                 .padding(8.dp)
         ) {
-            ProfileInfoRow(label = "Tên:", value = "")
+            ProfileInfoRow(label = "Tên:", value = userData?.get("username")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "ID:", value = "")
+            ProfileInfoRow(label = "ID:", value = FirebaseAuth.getInstance().currentUser?.uid ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Ngày tạo:", value = "")
+            ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Xếp hạng:", value = "")
+            ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "1200")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Mô tả:", value = "")
+            if (isEditing) {
+                BasicTextField(
+                    value = description,
+                    onValueChange = onDescriptionChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 20.sp,
+                        color = Color.Black
+                    ),
+                    decorationBox = { innerTextField ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Mô tả:",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black,
+                                modifier = Modifier.width(100.dp)
+                            )
+                            innerTextField()
+                        }
+                    }
+                )
+            } else {
+                ProfileInfoRow(label = "Mô tả:", value = description)
+            }
         }
     }
 }
@@ -216,14 +251,47 @@ fun ProfileScreen(
     onMatchHistoryClick: () -> Unit = { navController?.navigate("match_history") },
     onLogoutClick: () -> Unit = {}
 ) {
+    var userData by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var isEditing by remember { mutableStateOf(false) }
+    var description by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    // Lấy thông tin user từ Realtime Database
+    LaunchedEffect(Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            DatabaseHelper.getUser(userId) { data ->
+                userData = data
+                description = data?.get("description")?.toString() ?: ""
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         ProfileHeader(onBackClick = onBackClick)
         ProfileContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
+            userData = userData,
+            isEditing = isEditing,
+            description = description,
+            onDescriptionChange = { description = it },
+            onEditClick = { isEditing = true },
+            onSaveClick = {
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    DatabaseHelper.updateUserDescription(userId, description)
+                    isEditing = false
+                }
+            },
             onMatchHistoryClick = onMatchHistoryClick,
-            onLogoutClick = onLogoutClick
+            onLogoutClick = {
+                FirebaseAuth.getInstance().signOut()
+                navController?.navigate("login") {
+                    popUpTo("profile") { inclusive = true }
+                }
+            }
         )
     }
 }

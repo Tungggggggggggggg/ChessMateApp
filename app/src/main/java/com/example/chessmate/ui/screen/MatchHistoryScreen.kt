@@ -6,19 +6,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.chessmate.DatabaseHelper
 import com.example.chessmate.R
 import com.example.chessmate.ui.theme.ChessmateTheme
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.tooling.preview.Preview
+
 
 // Thanh tiêu đề với nút quay lại và tiêu đề "Lịch sử trận đấu"
 @Composable
@@ -167,9 +170,20 @@ fun MatchHistoryContent(
 @Composable
 fun MatchHistoryScreen(
     navController: NavController? = null,
-    onBackClick: () -> Unit = { navController?.popBackStack() },
-    matches: List<Match> = emptyList()
+    onBackClick: () -> Unit = { navController?.popBackStack() }
 ) {
+    var matches by remember { mutableStateOf<List<Match>>(emptyList()) }
+
+    // Lấy lịch sử trận đấu từ Realtime Database
+    LaunchedEffect(Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            DatabaseHelper.getMatchHistory(userId) { matchList ->
+                matches = matchList
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         MatchHistoryHeader(onBackClick = onBackClick)
         MatchHistoryContent(
@@ -181,18 +195,11 @@ fun MatchHistoryScreen(
     }
 }
 
-// Dữ liệu mẫu để xem trước
-val sampleMatches = listOf(
-    Match("Thắng", "30/03/2025", 45, "Nguyễn Quốc Tùng"),
-    Match("Thua", "29/03/2025", 32, "Nguyễn Nhật Lâm"),
-    Match("Hòa", "28/03/2025", 60, "Nguyễn Phi Khanh")
-)
-
 // Xem trước giao diện màn hình lịch sử trận đấu
 @Preview(showBackground = true)
 @Composable
 fun MatchHistoryScreenPreview() {
     ChessmateTheme {
-        MatchHistoryScreen(matches = sampleMatches)
+        MatchHistoryScreen()
     }
 }

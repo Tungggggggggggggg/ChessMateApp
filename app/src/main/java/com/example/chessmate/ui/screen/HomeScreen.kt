@@ -3,23 +3,21 @@ package com.example.chessmate.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.chessmate.R
 import com.example.chessmate.ui.components.ButtonItem
-import com.example.chessmate.ui.theme.ChessmateTheme
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.Logo
+import com.example.chessmate.ui.theme.ChessmateTheme
 
-// Màn hình chính với logo, các nút và bàn cờ
 @Composable
 fun HomeScreen(navController: NavController) {
     Scaffold(
@@ -42,6 +40,7 @@ fun HomeScreen(navController: NavController) {
                 Logo()
                 Spacer(modifier = Modifier.height(20.dp))
                 ButtonRow(navController)
+
                 Spacer(modifier = Modifier.height(20.dp))
                 // Bàn cờ
                 Chessboard()
@@ -50,7 +49,6 @@ fun HomeScreen(navController: NavController) {
     }
 }
 
-// Các hàng nút điều hướng và trạng thái online/offline
 @Composable
 fun ButtonRow(navController: NavController) {
     Column(
@@ -84,23 +82,23 @@ fun ButtonRow(navController: NavController) {
         ) {
             ButtonItem(
                 text = "Đấu với AI",
-                colorId = R.color.color_c89f9c
+                colorId = R.color.color_c89f9c,
+                onClick = { navController.navigate("play_with_ai") }
             )
             Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
                 text = "Đấu với bạn",
-                colorId = R.color.color_c89f9c
+                colorId = R.color.color_c89f9c,
+                onClick = { navController.navigate("play_with_friend") }
             )
         }
     }
 }
 
-// Xem trước giao diện màn hình chính
 @Preview(showBackground = true)
 @Composable
 fun PreviewHomeScreen() {
-    val navController = rememberNavController()
     ChessmateTheme {
-        HomeScreen(navController)
+        HomeScreen(rememberNavController())
     }
 }

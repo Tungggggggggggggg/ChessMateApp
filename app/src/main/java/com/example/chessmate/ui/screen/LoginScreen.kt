@@ -1,7 +1,6 @@
 package com.example.chessmate.ui.screen
 
 import android.app.Activity
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -74,7 +73,7 @@ fun Header(onBackClick: () -> Unit) {
 
 @Composable
 fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> Unit) {
-    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -129,8 +128,8 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
             }
         }
 
-        InputField(label = "Email:", value = email, onValueChange = { email = it }, placeholder = "Nhập email ...")
-        InputField(label = "Mật khẩu:", value = password, onValueChange = { password = it }, isPassword = true,placeholder = "Nhập mật khẩu ...")
+        InputField(label = "Tài khoản:", value = username, onValueChange = { username = it }, placeholder = "Nhập tài khoản ...")
+        InputField(label = "Mật khẩu:", value = password, onValueChange = { password = it }, isPassword = true, placeholder = "Nhập mật khẩu ...")
 
         Text(
             text = "Quên mật khẩu?",
@@ -158,12 +157,12 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
 
         Button(
             onClick = {
-                if (email.isBlank() || password.isBlank()) {
+                if (username.isBlank() || password.isBlank()) {
                     errorMessage = "Vui lòng điền đầy đủ thông tin."
                 } else {
                     errorMessage = ""
                     keyboardController?.hide()
-                    onLoginClick(email, password)
+                    onLoginClick(username, password)
                 }
             },
             modifier = Modifier.fillMaxWidth(0.7f),
@@ -184,7 +183,6 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
     }
 }
 
-
 @Composable
 fun LoginScreen(navController: NavController? = null) {
     val context = LocalContext.current
@@ -202,7 +200,9 @@ fun LoginScreen(navController: NavController? = null) {
         }
     }
 
-    fun loginWithEmail(email: String, password: String) {
+    fun loginWithUsername(username: String, password: String) {
+        // Chuyển username thành email giả để đăng nhập với Firebase Authentication
+        val email = "$username@chessmate.com"
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 navController?.navigate("main_screen")
@@ -221,7 +221,7 @@ fun LoginScreen(navController: NavController? = null) {
             Logo(modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(20.dp))
             LoginForm(
-                onLoginClick = { email, password -> loginWithEmail(email, password) },
+                onLoginClick = { username, password -> loginWithUsername(username, password) },
                 onGoogleLoginClick = {
                     oneTapClient.beginSignIn(
                         BeginSignInRequest.builder()
