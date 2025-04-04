@@ -16,11 +16,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.chessmate.DatabaseHelper
 import com.example.chessmate.R
 import com.example.chessmate.ui.theme.ChessmateTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 
 // Thanh tiêu đề với nút quay lại và tiêu đề "Lịch sử trận đấu"
@@ -172,17 +174,42 @@ fun MatchHistoryScreen(
     navController: NavController? = null,
     onBackClick: () -> Unit = { navController?.popBackStack() }
 ) {
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
     var matches by remember { mutableStateOf<List<Match>>(emptyList()) }
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(true) }
 
-    // Lấy lịch sử trận đấu từ Realtime Database
+    // Lấy lịch sử trận đấu từ Firestore
     LaunchedEffect(Unit) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val userId = auth.currentUser?.uid
         if (userId != null) {
-            DatabaseHelper.getMatchHistory(userId) { matchList ->
-                matches = matchList
+            firestore.collection("users")
+                .document(userId)
+                .collection("match_history")
+                .orderBy("date") // Sắp xếp theo ngày (có thể tùy chỉnh)
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    val matchList = mutableListOf<Match>()
+                    for (document in querySnapshot) {
+                        val result = document.getString("result") ?: ""
+                        val date = document.getString("date") ?: ""
+                        val moves = document.getLong("moves")?.toInt() ?: 0
+                        val opponent = document.getString("opponent") ?: ""
+                        matchList.add(Match(result, date, moves, opponent))
+                    }
+                    matches = matchList
+                    isLoading = false
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(context, "Lỗi khi tải lịch sử: ${e.message}", Toast.LENGTH_SHORT).show()
+                    isLoading = false
+                }
+            } else {
+                Toast.makeText(context, "Người dùng chưa đăng nhập.", Toast.LENGTH_SHORT).show()
+                isLoading = false
             }
         }
-    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         MatchHistoryHeader(onBackClick = onBackClick)

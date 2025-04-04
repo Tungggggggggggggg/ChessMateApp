@@ -20,11 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.chessmate.DatabaseHelper
 import com.example.chessmate.R
 import com.example.chessmate.ui.theme.ChessmateTheme
 import androidx.compose.ui.tooling.preview.Preview
+import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 // Thanh tiêu đề với nút quay lại và tiêu đề "Thông tin cá nhân"
 @Composable
@@ -173,13 +174,13 @@ fun ProfileContent(
                 .background(colorResource(id = R.color.color_eee2df))
                 .padding(8.dp)
         ) {
-            ProfileInfoRow(label = "Tên:", value = userData?.get("username")?.toString() ?: "")
+            ProfileInfoRow(label = "Tên:", value = userData?.get("name")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
             ProfileInfoRow(label = "ID:", value = FirebaseAuth.getInstance().currentUser?.uid ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
             ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "1200")
+            ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
             if (isEditing) {
                 BasicTextField(
@@ -251,51 +252,96 @@ fun ProfileScreen(
     onMatchHistoryClick: () -> Unit = { navController?.navigate("match_history") },
     onLogoutClick: () -> Unit = {}
 ) {
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
     var userData by remember { mutableStateOf<Map<String, Any>?>(null) }
     var isEditing by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var isFetchingData by remember { mutableStateOf(true) }//// Để theo dõi trạng thái tải dữ liệu
 
-    // Lấy thông tin user từ Realtime Database
+    // Lấy thông tin user từ Firebase
     LaunchedEffect(Unit) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val userId = auth.currentUser?.uid
         if (userId != null) {
-            DatabaseHelper.getUser(userId) { data ->
-                userData = data
-                description = data?.get("description")?.toString() ?: ""
-            }
+            firestore.collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        userData = document.data
+                        description = document.getString("description") ?: ""
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Lỗi: Không tìm thấy thông tin người dùng.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    isFetchingData = false
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(
+                        context,
+                        "Lỗi khi tải thông tin: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    isFetchingData = false
+                }
+        } else {
+            Toast.makeText(context, "Bạn chưa đăng nhập.", Toast.LENGTH_SHORT).show()
+            isFetchingData = false
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         ProfileHeader(onBackClick = onBackClick)
-        ProfileContent(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            userData = userData,
-            isEditing = isEditing,
-            description = description,
-            onDescriptionChange = { description = it },
-            onEditClick = { isEditing = true },
-            onSaveClick = {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                if (userId != null) {
-                    DatabaseHelper.updateUserDescription(userId, description)
-                    isEditing = false
-                }
-            },
-            onMatchHistoryClick = onMatchHistoryClick,
-            onLogoutClick = {
-                FirebaseAuth.getInstance().signOut()
-                navController?.navigate("login") {
-                    popUpTo("profile") { inclusive = true }
-                }
+        if (isFetchingData) {
+            // Hiển thị một chỉ báo tải dữ liệu nếu cần
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-        )
+        } else {
+            ProfileContent(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                userData = userData,
+                isEditing = isEditing,
+                description = description,
+                onDescriptionChange = { description = it },
+                onEditClick = { isEditing = true },
+                onSaveClick = {
+                    val userId = auth.currentUser?.uid
+                    if (userId != null && isEditing) {
+                        firestore.collection("users")
+                            .document(userId)
+                            .update("description", description)
+                            .addOnSuccessListener {
+                                isEditing = false
+                                Toast.makeText(context, "Đã lưu thông tin.", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(
+                                    context,
+                                    "Lỗi khi lưu: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                },
+                onMatchHistoryClick = onMatchHistoryClick,
+                onLogoutClick = {
+                    auth.signOut()
+                    navController?.navigate("login") {
+                        popUpTo("profile") { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
-
 // Xem trước giao diện màn hình hồ sơ
 @Preview(showBackground = true)
 @Composable
@@ -304,3 +350,5 @@ fun ProfileScreenPreview() {
         ProfileScreen()
     }
 }
+
+

@@ -42,6 +42,9 @@ import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
+import com.example.chessmate.ui.theme.ChessmateTheme
+
 
 @Composable
 fun Header(onBackClick: () -> Unit) {
@@ -187,6 +190,7 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
 fun LoginScreen(navController: NavController? = null) {
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
     val oneTapClient: SignInClient = Identity.getSignInClient(context)
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -205,9 +209,39 @@ fun LoginScreen(navController: NavController? = null) {
         val email = "$username@chessmate.com"
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                navController?.navigate("main_screen")
+                // Lấy UID của người dùng đã đăng nhập
+                val userId = auth.currentUser?.uid
+                if (userId != null) {
+                    // Truy vấn Firestore để lấy thông tin người dùng (ví dụ: tên)
+                    firestore.collection("users")
+                        .document(userId)
+                        .get()
+                        .addOnSuccessListener { document ->
+                            if (document.exists()) {
+                                // Có thể lấy dữ liệu từ document tại đây, ví dụ:
+                                // val displayName = document.getString("name")
+                                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                navController?.navigate("main_screen")
+                            } else {
+                                // Trường hợp hiếm gặp: tài khoản Auth có nhưng không có thông tin Firestore
+                                Toast.makeText(context, "Lỗi: Không tìm thấy thông tin người dùng.", Toast.LENGTH_SHORT).show()
+                                auth.signOut() // Đăng xuất để người dùng thử lại hoặc liên hệ hỗ trợ
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(context, "Lỗi khi truy cập dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                            auth.signOut()
+                        }
+                } else {
+                    Toast.makeText(context, "Lỗi: Không thể lấy ID người dùng sau đăng nhập.", Toast.LENGTH_SHORT).show()
+                    auth.signOut()
+                }
             } else {
-                Toast.makeText(context, "Đăng nhập thất bại. Kiểm tra lại tài khoản hoặc mật khẩu.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Đăng nhập thất bại. Kiểm tra lại tài khoản hoặc mật khẩu.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
