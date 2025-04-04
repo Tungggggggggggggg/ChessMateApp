@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "734321254855",
+    "firebase_url": "https://chessmate-2c597-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "chessmate-2c597",
     "storage_bucket": "chessmate-2c597.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "734321254855-8us1b2jvaveaav7ukhuuam8ieqq824bi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chessmate",
+            "certificate_hash": "2cc8be12587e765e165db3cb8e0cb101b54b49fc"
+          }
+        },
         {
           "client_id": "734321254855-9v8pen6p88e0q2ot4fcmodma7ethgc0n.apps.googleusercontent.com",
           "client_type": 1,
@@ -27,14 +36,6 @@
           "android_info": {
             "package_name": "com.example.chessmate",
             "certificate_hash": "e0e38fdf46d02fa7ff3638e622d7e52296f42d78"
-          }
-        },
-        {
-          "client_id": "734321254855-sukai7u8doetds3mg48bd9c8vcved80m.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.chessmate",
-            "certificate_hash": "1292f247941795eeeb921ae459f83d532ba40bed"
           }
         },
         {
