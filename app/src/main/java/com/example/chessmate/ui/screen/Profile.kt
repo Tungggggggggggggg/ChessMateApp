@@ -27,7 +27,6 @@ import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Thanh tiêu đề với nút quay lại và tiêu đề "Thông tin cá nhân"
 @Composable
 fun ProfileHeader(
     onBackClick: () -> Unit,
@@ -64,7 +63,6 @@ fun ProfileHeader(
     }
 }
 
-// Phần nội dung chính của màn hình hồ sơ
 @Composable
 fun ProfileContent(
     modifier: Modifier = Modifier,
@@ -85,8 +83,6 @@ fun ProfileContent(
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Ảnh đại diện (hình tròn)
         Image(
             painter = painterResource(id = R.drawable.profile),
             contentDescription = "Ảnh đại diện",
@@ -94,10 +90,7 @@ fun ProfileContent(
                 .size(150.dp)
                 .clip(CircleShape)
         )
-
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Các nút trên cùng
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -128,10 +121,7 @@ fun ProfileContent(
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Các nút mới: Lịch sử trận đấu và Đăng xuất
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -162,10 +152,7 @@ fun ProfileContent(
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(20.dp))
-
-        // Thông tin hồ sơ
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -176,7 +163,7 @@ fun ProfileContent(
         ) {
             ProfileInfoRow(label = "Tên:", value = userData?.get("name")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "ID:", value = FirebaseAuth.getInstance().currentUser?.uid ?: "")
+            ProfileInfoRow(label = "Email:", value = FirebaseAuth.getInstance().currentUser?.email ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
             ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
@@ -216,7 +203,6 @@ fun ProfileContent(
     }
 }
 
-// Hàng thông tin hồ sơ (label và value)
 @Composable
 fun ProfileInfoRow(
     label: String,
@@ -244,7 +230,6 @@ fun ProfileInfoRow(
     }
 }
 
-// Màn hình chính để hiển thị hồ sơ
 @Composable
 fun ProfileScreen(
     navController: NavController? = null,
@@ -258,9 +243,8 @@ fun ProfileScreen(
     var isEditing by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     val context = LocalContext.current
-    var isFetchingData by remember { mutableStateOf(true) }//// Để theo dõi trạng thái tải dữ liệu
+    var isFetchingData by remember { mutableStateOf(true) }
 
-    // Lấy thông tin user từ Firebase
     LaunchedEffect(Unit) {
         val userId = auth.currentUser?.uid
         if (userId != null) {
@@ -271,25 +255,17 @@ fun ProfileScreen(
                     if (document.exists()) {
                         userData = document.data
                         description = document.getString("description") ?: ""
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "Lỗi: Không tìm thấy thông tin người dùng.",
-                            Toast.LENGTH_SHORT
-                        ).show()
                     }
                     isFetchingData = false
                 }
                 .addOnFailureListener { e ->
-                    Toast.makeText(
-                        context,
-                        "Lỗi khi tải thông tin: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(context, "Lỗi khi tải thông tin: ${e.message}", Toast.LENGTH_SHORT).show()
                     isFetchingData = false
                 }
         } else {
-            Toast.makeText(context, "Bạn chưa đăng nhập.", Toast.LENGTH_SHORT).show()
+            navController?.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
             isFetchingData = false
         }
     }
@@ -297,15 +273,12 @@ fun ProfileScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         ProfileHeader(onBackClick = onBackClick)
         if (isFetchingData) {
-            // Hiển thị một chỉ báo tải dữ liệu nếu cần
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
             ProfileContent(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 userData = userData,
                 isEditing = isEditing,
                 description = description,
@@ -319,30 +292,27 @@ fun ProfileScreen(
                             .update("description", description)
                             .addOnSuccessListener {
                                 isEditing = false
-                                Toast.makeText(context, "Đã lưu thông tin.", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(context, "Đã lưu thông tin.", Toast.LENGTH_SHORT).show()
                             }
                             .addOnFailureListener { e ->
-                                Toast.makeText(
-                                    context,
-                                    "Lỗi khi lưu: ${e.message}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                Toast.makeText(context, "Lỗi khi lưu: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
                     }
                 },
                 onMatchHistoryClick = onMatchHistoryClick,
                 onLogoutClick = {
                     auth.signOut()
-                    navController?.navigate("login") {
-                        popUpTo("profile") { inclusive = true }
+                    Toast.makeText(context, "Đăng xuất thành công!", Toast.LENGTH_SHORT).show()
+                    navController?.navigate("home") {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
         }
     }
 }
-// Xem trước giao diện màn hình hồ sơ
+
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
@@ -350,5 +320,3 @@ fun ProfileScreenPreview() {
         ProfileScreen()
     }
 }
-
-

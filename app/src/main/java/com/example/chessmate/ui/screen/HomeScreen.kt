@@ -17,9 +17,19 @@ import com.example.chessmate.ui.components.ButtonItem
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.Logo
 import com.example.chessmate.ui.theme.ChessmateTheme
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun HomeScreen(navController: NavController) {
+    val auth = FirebaseAuth.getInstance()
+    LaunchedEffect(Unit) {
+        if (auth.currentUser != null) {
+            navController.navigate("main_screen") {
+                popUpTo("home") { inclusive = true }
+            }
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,

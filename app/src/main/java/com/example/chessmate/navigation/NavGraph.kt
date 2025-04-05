@@ -4,20 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.chessmate.ui.screen.HomeScreen
-import com.example.chessmate.ui.screen.LoginScreen
-import com.example.chessmate.ui.screen.RegisterScreen
-import com.example.chessmate.ui.screen.ProfileScreen
-import com.example.chessmate.ui.screen.FindFriendsScreen
-import com.example.chessmate.ui.screen.LoadingScreen
-import com.example.chessmate.ui.screen.MainScreen
-import com.example.chessmate.ui.screen.ResetPasswordScreen
-import com.example.chessmate.ui.screen.PlayScreen
-import com.example.chessmate.ui.screen.MatchHistoryScreen
+import com.example.chessmate.ui.screen.*
 
 @Composable
-fun NavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = "home") {
+fun NavGraph(
+    navController: NavHostController,
+    startDestination: String = "home"
+) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("home") { HomeScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("register") { RegisterScreen(navController) }

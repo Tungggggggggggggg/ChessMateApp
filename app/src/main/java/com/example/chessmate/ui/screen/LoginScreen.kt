@@ -43,19 +43,24 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
-import com.example.chessmate.ui.theme.ChessmateTheme
-
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun Header(onBackClick: () -> Unit) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFFC89F9C))
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 10.dp)
     ) {
-        IconButton(onClick = onBackClick) {
+        IconButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 16.dp)
+        ) {
             Image(
                 painter = painterResource(id = R.drawable.back),
                 contentDescription = "Quay lại",
@@ -68,8 +73,8 @@ fun Header(onBackClick: () -> Unit) {
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier
-                .weight(1f)
                 .fillMaxWidth()
+                .align(Alignment.Center)
         )
     }
 }
@@ -168,14 +173,20 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
                     onLoginClick(username, password)
                 }
             },
-            modifier = Modifier.fillMaxWidth(0.7f),
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .height(48.dp),
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c))
-        ) { Text("Đăng nhập", fontSize = 20.sp) }
+        ) {
+            Text("Đăng nhập", fontSize = 16.sp)
+        }
 
         Button(
             onClick = onGoogleLoginClick,
-            modifier = Modifier.fillMaxWidth(0.85f),
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .height(48.dp),
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c))
         ) {
@@ -192,40 +203,139 @@ fun LoginScreen(navController: NavController? = null) {
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     val oneTapClient: SignInClient = Identity.getSignInClient(context)
+    val activity = context as? Activity
+
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val currentDate = dateFormat.format(Date())
+
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val credential = oneTapClient.getSignInCredentialFromIntent(result.data)
-            credential.googleIdToken?.let {
-                val firebaseCredential = GoogleAuthProvider.getCredential(it, null)
+            credential.googleIdToken?.let { idToken ->
+                val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                 auth.signInWithCredential(firebaseCredential).addOnCompleteListener { task ->
-                    if (task.isSuccessful) navController?.navigate("main_screen")
+                    if (task.isSuccessful) {
+                        val user = auth.currentUser
+                        if (user != null) {
+                            val userId = user.uid
+                            firestore.collection("users")
+                                .document(userId)
+                                .get()
+                                .addOnSuccessListener { document ->
+                                    if (document.exists()) {
+                                        Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                        navController?.navigate("main_screen") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    } else {
+                                        val userData = hashMapOf(
+                                            "name" to (user.displayName ?: "Unknown"),
+                                            "email" to (user.email ?: ""),
+                                            "createdAt" to currentDate,
+                                            "description" to "Không có mô tả",
+                                            "rating" to 0,
+                                            "userId" to userId
+                                        )
+                                        firestore.collection("users")
+                                            .document(userId)
+                                            .set(userData)
+                                            .addOnSuccessListener {
+                                                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                                navController?.navigate("main_screen") {
+                                                    popUpTo("login") { inclusive = true }
+                                                }
+                                            }
+                                            .addOnFailureListener { e ->
+                                                Toast.makeText(context, "Lỗi khi lưu dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                auth.signOut()
+                                            }
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Lỗi khi truy cập dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    auth.signOut()
+                                }
+                        } else {
+                            Toast.makeText(context, "Lỗi: Không thể lấy thông tin người dùng.", Toast.LENGTH_SHORT).show()
+                            auth.signOut()
+                        }
+                    } else {
+                        Toast.makeText(context, "Đăng nhập thất bại: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
+        } else {
+            Toast.makeText(context, "Đăng nhập thất bại: Không nhận được kết quả từ Google.", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun loginWithUsername(username: String, password: String) {
-        // Chuyển username thành email giả để đăng nhập với Firebase Authentication
         val email = "$username@chessmate.com"
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                // Lấy UID của người dùng đã đăng nhập
                 val userId = auth.currentUser?.uid
                 if (userId != null) {
-                    // Truy vấn Firestore để lấy thông tin người dùng (ví dụ: tên)
                     firestore.collection("users")
                         .document(userId)
                         .get()
                         .addOnSuccessListener { document ->
                             if (document.exists()) {
-                                // Có thể lấy dữ liệu từ document tại đây, ví dụ:
-                                // val displayName = document.getString("name")
-                                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                                navController?.navigate("main_screen")
+                                val userData = document.data?.toMutableMap() ?: mutableMapOf()
+                                val description = userData["description"]?.toString()
+                                val needsUpdate = mutableMapOf<String, Any>()
+
+                                if (description.isNullOrEmpty()) {
+                                    needsUpdate["description"] = "Không có mô tả"
+                                }
+
+                                if (!userData.containsKey("rating")) {
+                                    needsUpdate["rating"] = 0
+                                }
+
+                                if (needsUpdate.isNotEmpty()) {
+                                    firestore.collection("users")
+                                        .document(userId)
+                                        .update(needsUpdate)
+                                        .addOnSuccessListener {
+                                            Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                            navController?.navigate("main_screen") {
+                                                popUpTo("login") { inclusive = true }
+                                            }
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Toast.makeText(context, "Lỗi khi cập nhật dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            auth.signOut()
+                                        }
+                                } else {
+                                    Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                    navController?.navigate("main_screen") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                }
                             } else {
-                                // Trường hợp hiếm gặp: tài khoản Auth có nhưng không có thông tin Firestore
-                                Toast.makeText(context, "Lỗi: Không tìm thấy thông tin người dùng.", Toast.LENGTH_SHORT).show()
-                                auth.signOut() // Đăng xuất để người dùng thử lại hoặc liên hệ hỗ trợ
+                                val user = auth.currentUser
+                                val userData = hashMapOf(
+                                    "name" to (user?.displayName ?: "Unknown"),
+                                    "email" to email,
+                                    "createdAt" to currentDate,
+                                    "description" to "Không có mô tả",
+                                    "rating" to 0,
+                                    "userId" to userId,
+                                    "username" to username
+                                )
+                                firestore.collection("users")
+                                    .document(userId)
+                                    .set(userData)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                        navController?.navigate("main_screen") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Lỗi khi lưu dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        auth.signOut()
+                                    }
                             }
                         }
                         .addOnFailureListener { e ->
@@ -247,9 +357,22 @@ fun LoginScreen(navController: NavController? = null) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Header(onBackClick = { navController?.popBackStack() })
+        Header(onBackClick = {
+            if (navController?.previousBackStackEntry == null) {
+                navController?.navigate("home") {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            } else {
+                navController.popBackStack()
+            }
+        })
         Column(
-            modifier = Modifier.fillMaxWidth().weight(1f).background(Color(0xFFC97C5D)).verticalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color(0xFFC97C5D))
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Logo(modifier = Modifier.fillMaxWidth())
@@ -269,8 +392,32 @@ fun LoginScreen(navController: NavController? = null) {
                             .build()
                     ).addOnSuccessListener { result ->
                         launcher.launch(androidx.activity.result.IntentSenderRequest.Builder(result.pendingIntent.intentSender).build())
+                    }.addOnFailureListener { e ->
+                        Toast.makeText(context, "Lỗi khi bắt đầu đăng nhập Google: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
+            )
+        }
+    }
+}
+
+@Composable
+fun LoginScreenPreviewContent() {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Header(onBackClick = {})
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color(0xFFC97C5D))
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Logo(modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(20.dp))
+            LoginForm(
+                onLoginClick = { _, _ -> },
+                onGoogleLoginClick = {}
             )
         }
     }
@@ -279,5 +426,7 @@ fun LoginScreen(navController: NavController? = null) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
-    ChessmateTheme { LoginScreen() }
+    ChessmateTheme {
+        LoginScreenPreviewContent()
+    }
 }

@@ -6,23 +6,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.chessmate.R
 import com.example.chessmate.ui.components.ButtonItem
-import com.example.chessmate.ui.theme.ChessmateTheme
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.Logo
+import com.google.firebase.auth.FirebaseAuth
 
-// Thanh tiêu đề với các biểu tượng tin nhắn và hồ sơ
 @Composable
 fun MainHeader(
     navController: NavController,
@@ -37,7 +35,6 @@ fun MainHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(20.dp))
-        // Biểu tượng tin nhắn với chấm đỏ thông báo
         IconButton(
             onClick = onMessageClick,
             modifier = Modifier.size(40.dp)
@@ -59,7 +56,6 @@ fun MainHeader(
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        // Biểu tượng hồ sơ
         IconButton(
             onClick = { navController.navigate("profile") },
             modifier = Modifier.size(40.dp)
@@ -74,7 +70,6 @@ fun MainHeader(
     }
 }
 
-// Các hàng nút điều hướng
 @Composable
 fun MainButtonRow(navController: NavController) {
     Column(
@@ -82,7 +77,6 @@ fun MainButtonRow(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Hàng 1: Nút Chơi, Nút Tìm bạn
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
@@ -91,7 +85,7 @@ fun MainButtonRow(navController: NavController) {
             ButtonItem(
                 text = "Chơi",
                 colorId = R.color.color_c89f9c,
-                onClick = { navController.navigate("play") } // Điều hướng đến PlayScreen
+                onClick = { navController.navigate("play") }
             )
             Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
@@ -100,7 +94,6 @@ fun MainButtonRow(navController: NavController) {
                 onClick = { navController.navigate("find_friends") }
             )
         }
-        // Hàng 2: Nút Đấu với AI, Nút Chơi với bạn
         Row(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth(),
@@ -119,9 +112,19 @@ fun MainButtonRow(navController: NavController) {
     }
 }
 
-// Màn hình chính với header, logo, các nút và bàn cờ
 @Composable
 fun MainScreen(navController: NavController) {
+    val auth = FirebaseAuth.getInstance()
+
+    LaunchedEffect(Unit) {
+        if (auth.currentUser == null) {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -136,23 +139,11 @@ fun MainScreen(navController: NavController) {
             verticalArrangement = Arrangement.Top
         ) {
             MainHeader(navController = navController)
-            // Logo ứng dụng
             Logo()
             Spacer(modifier = Modifier.height(20.dp))
             MainButtonRow(navController)
             Spacer(modifier = Modifier.height(20.dp))
-            // Bàn cờ
             Chessboard()
         }
-    }
-}
-
-// Xem trước giao diện màn hình chính
-@Preview(showBackground = true)
-@Composable
-fun PreviewMainScreen() {
-    val navController = rememberNavController()
-    ChessmateTheme {
-        MainScreen(navController)
     }
 }
