@@ -24,6 +24,8 @@ import com.example.chessmate.R
 import com.example.chessmate.ui.theme.ChessmateTheme
 import androidx.compose.ui.tooling.preview.Preview
 import android.widget.Toast
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -64,6 +66,38 @@ fun ProfileHeader(
 }
 
 @Composable
+fun EditableProfileInfoRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.width(100.dp)
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 20.sp,
+                color = Color.Black
+            ),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+
+@Composable
 fun ProfileContent(
     modifier: Modifier = Modifier,
     userData: Map<String, Any>? = null,
@@ -71,16 +105,21 @@ fun ProfileContent(
     description: String = "",
     onDescriptionChange: (String) -> Unit = {},
     onEditClick: () -> Unit = {},
-    onSaveClick: () -> Unit = {},
+    onSaveClick: (String?) -> Unit = { _ -> }, // Thay đổi signature của onSaveClick
     onMatchHistoryClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
+    var editableName by remember { mutableStateOf(userData?.get("name")?.toString() ?: "") }
+    val scrollState = rememberScrollState() // Tạo state cho việc cuộn
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(colorResource(id = R.color.color_c97c5d)),
+            .background(colorResource(id = R.color.color_c97c5d))
+            .verticalScroll(scrollState) // Thêm khả năng cuộn dọc
+            .padding(bottom = 80.dp), // Thêm padding dưới để tránh bị che bởi bàn phím (ước tính)
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+        verticalArrangement = Arrangement.spacedBy(20.dp) // Sử dụng spacedBy để có khoảng cách giữa các phần
     ) {
         Spacer(modifier = Modifier.height(20.dp))
         Image(
@@ -95,7 +134,13 @@ fun ProfileContent(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Button(
-                onClick = if (isEditing) onSaveClick else onEditClick,
+                onClick = {
+                    if (isEditing) {
+                        onSaveClick(editableName)
+                    } else {
+                        onEditClick()
+                    }
+                },
                 modifier = Modifier.height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
                 shape = RoundedCornerShape(20.dp)
@@ -159,17 +204,18 @@ fun ProfileContent(
                 .padding(horizontal = 32.dp)
                 .border(1.dp, Color.Black)
                 .background(colorResource(id = R.color.color_eee2df))
-                .padding(8.dp)
+                .padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp) // Thêm khoảng cách bên trong container thông tin
         ) {
-            ProfileInfoRow(label = "Tên:", value = userData?.get("name")?.toString() ?: "")
-            HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Email:", value = FirebaseAuth.getInstance().currentUser?.email ?: "")
-            HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
-            HorizontalDivider(color = Color.Black, thickness = 1.dp)
-            ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "")
-            HorizontalDivider(color = Color.Black, thickness = 1.dp)
             if (isEditing) {
+                EditableProfileInfoRow(label = "Tên:", value = editableName, onValueChange = { editableName = it })
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                ProfileInfoRow(label = "Email:", value = FirebaseAuth.getInstance().currentUser?.email ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 BasicTextField(
                     value = description,
                     onValueChange = onDescriptionChange,
@@ -197,6 +243,14 @@ fun ProfileContent(
                     }
                 )
             } else {
+                ProfileInfoRow(label = "Tên:", value = userData?.get("name")?.toString() ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                ProfileInfoRow(label = "Email:", value = FirebaseAuth.getInstance().currentUser?.email ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "")
+                HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 ProfileInfoRow(label = "Mô tả:", value = description)
             }
         }
@@ -235,7 +289,6 @@ fun ProfileScreen(
     navController: NavController? = null,
     onBackClick: () -> Unit = { navController?.popBackStack() },
     onMatchHistoryClick: () -> Unit = { navController?.navigate("match_history") },
-    onLogoutClick: () -> Unit = {}
 ) {
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
@@ -244,6 +297,13 @@ fun ProfileScreen(
     var description by remember { mutableStateOf("") }
     val context = LocalContext.current
     var isFetchingData by remember { mutableStateOf(true) }
+
+    // State để lưu trữ tên có thể chỉnh sửa
+    var editableName by remember { mutableStateOf("") }
+
+    LaunchedEffect(userData) {
+        editableName = userData?.get("name")?.toString() ?: ""
+    }
 
     LaunchedEffect(Unit) {
         val userId = auth.currentUser?.uid
@@ -255,6 +315,7 @@ fun ProfileScreen(
                     if (document.exists()) {
                         userData = document.data
                         description = document.getString("description") ?: ""
+                        editableName = document.getString("name") ?: "" // Khởi tạo editableName
                     }
                     isFetchingData = false
                 }
@@ -283,20 +344,43 @@ fun ProfileScreen(
                 isEditing = isEditing,
                 description = description,
                 onDescriptionChange = { description = it },
-                onEditClick = { isEditing = true },
-                onSaveClick = {
-                    val userId = auth.currentUser?.uid
-                    if (userId != null && isEditing) {
-                        firestore.collection("users")
-                            .document(userId)
-                            .update("description", description)
-                            .addOnSuccessListener {
-                                isEditing = false
-                                Toast.makeText(context, "Đã lưu thông tin.", Toast.LENGTH_SHORT).show()
+                onEditClick = {
+                    isEditing = true
+                    editableName =
+                        userData?.get("name")?.toString() ?: "" // Cập nhật khi bắt đầu chỉnh sửa
+                },
+                onSaveClick = { currentEditableName ->
+                    if (isEditing) {
+                        val user = auth.currentUser
+                        val userId = user?.uid
+
+                        if (userId != null) {
+                            // Cập nhật tên trong Firestore
+                            if (userData?.get("name")?.toString() != currentEditableName && currentEditableName != null) {
+                                firestore.collection("users")
+                                    .document(userId)
+                                    .update("name", currentEditableName)
+                                    .addOnSuccessListener {
+                                        userData = userData?.toMutableMap()?.apply { put("name", currentEditableName) }
+                                        Toast.makeText(context, "Đã cập nhật tên.", Toast.LENGTH_SHORT).show()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Lỗi khi cập nhật tên: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
                             }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(context, "Lỗi khi lưu: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
+
+                            // Lưu mô tả
+                            firestore.collection("users")
+                                .document(userId)
+                                .update("description", description)
+                                .addOnSuccessListener {
+                                    isEditing = false
+                                    Toast.makeText(context, "Đã lưu thông tin.", Toast.LENGTH_SHORT).show()
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Lỗi khi lưu mô tả: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
                     }
                 },
                 onMatchHistoryClick = onMatchHistoryClick,
@@ -312,6 +396,7 @@ fun ProfileScreen(
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
