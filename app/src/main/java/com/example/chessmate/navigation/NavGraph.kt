@@ -22,5 +22,6 @@ fun NavGraph(
         composable("play") { PlayScreen(navController) }
         composable("main_screen") { MainScreen(navController) }
         composable("match_history") { MatchHistoryScreen(navController) }
+        composable("chat") { ChatScreen(navController) }
     }
 }

@@ -2,10 +2,12 @@ package com.example.chessmate.ui.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,19 +17,176 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.chessmate.ui.theme.ChessmateTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-// Phần Header của màn hình Chat
+// Dữ liệu người dùng
+data class User(val userId: String, val name: String, val email: String = "")
+
+// ViewModel quản lý danh sách bạn bè
+class ChatViewModel : ViewModel() {
+    private val _friends = MutableStateFlow<List<User>>(emptyList())
+    val friends: StateFlow<List<User>> get() = _friends
+
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+
+    init {
+        loadFriends()
+    }
+
+    fun loadFriends() {
+        val currentUserId = auth.currentUser?.uid ?: return
+        firestore.collection("friends")
+            .whereIn("user1", listOf(currentUserId))
+            .get()
+            .addOnSuccessListener { result1 ->
+                firestore.collection("friends")
+                    .whereIn("user2", listOf(currentUserId))
+                    .get()
+                    .addOnSuccessListener { result2 ->
+                        val allDocs = result1.documents + result2.documents
+                        val fetchedFriends = mutableSetOf<User>()
+                        allDocs.forEach { doc ->
+                            val user1 = doc.getString("user1")
+                            val user2 = doc.getString("user2")
+                            val friendId = if (user1 == currentUserId) user2 else user1
+                            if (!friendId.isNullOrBlank()) {
+                                firestore.collection("users").document(friendId).get()
+                                    .addOnSuccessListener { userDoc ->
+                                        val name = userDoc.getString("name") ?: "Unknown"
+                                        val email = userDoc.getString("email") ?: ""
+                                        fetchedFriends.add(User(friendId, name, email))
+                                        _friends.value = fetchedFriends.toList()
+                                    }
+                            }
+                        }
+                    }
+            }
+    }
+
+    fun removeFriend(friend: User) {
+        val currentUserId = auth.currentUser?.uid ?: return
+
+        // Xóa mối quan hệ từ cả hai hướng: user1 và user2
+        firestore.collection("friends")
+            .whereEqualTo("user1", currentUserId)
+            .whereEqualTo("user2", friend.userId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                querySnapshot.documents.firstOrNull()?.reference?.delete()?.addOnSuccessListener {
+                    // Cập nhật lại danh sách bạn bè sau khi xóa
+                    _friends.value = _friends.value.filter { it.userId != friend.userId }
+                }
+            }
+
+        firestore.collection("friends")
+            .whereEqualTo("user1", friend.userId)
+            .whereEqualTo("user2", currentUserId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                querySnapshot.documents.firstOrNull()?.reference?.delete()?.addOnSuccessListener {
+                    // Cập nhật lại danh sách bạn bè sau khi xóa
+                    _friends.value = _friends.value.filter { it.userId != friend.userId }
+                }
+            }
+    }
+}
+    // Giao diện màn hình chat
+    @Composable
+    fun ChatScreen(
+        navController: NavController? = null,
+        viewModel: ChatViewModel = viewModel(),
+        onBackClick: () -> Unit = { navController?.popBackStack() }
+    ) {
+        val friends by viewModel.friends.collectAsState()
+        var showConfirmationDialog by remember { mutableStateOf<Pair<User, Boolean>?>(null) }
+
+        LaunchedEffect(Unit) {
+            viewModel.loadFriends()
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorResource(id = R.color.color_c97c5d))
+        ) {
+            ChatHeader(onBackClick = onBackClick)
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                if (friends.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Không có bạn bè nào.",
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
+                } else {
+                    friends.forEach { friend ->
+                        FriendListItem(
+                            friend = friend,
+                            onRemoveFriend = { showConfirmationDialog = Pair(friend, true) }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+            }
+
+            // Dialog xác nhận xóa bạn bè
+            showConfirmationDialog?.let { (friend, show) ->
+                if (show) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmationDialog = null },
+                        title = {
+                            Text(
+                                text = "Xóa bạn bè",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        },
+                        text = {
+                            Text("Bạn có chắc chắn muốn xóa '${friend.name}' khỏi danh sách bạn bè không?")
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                viewModel.removeFriend(friend)
+                                showConfirmationDialog = null
+                            }) {
+                                Text("Xóa", color = Color.Red)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmationDialog = null }) {
+                                Text("Hủy")
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+
+// Phần header có nút quay lại
 @Composable
-fun ChatHeader(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun ChatHeader(onBackClick: () -> Unit) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .background(colorResource(id = R.color.color_c89f9c))
             .padding(vertical = 10.dp),
@@ -47,47 +206,29 @@ fun ChatHeader(
 
         Spacer(modifier = Modifier.width(20.dp))
         Text(
-            text = "Nhắn tin",
+            text = " Bạn bè",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
+            color = Color.White,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
                 .wrapContentWidth(Alignment.CenterHorizontally)
         )
-        Spacer(modifier = Modifier.width(20.dp)) // Để căn chỉnh cho đẹp
+        Spacer(modifier = Modifier.width(20.dp))
     }
 }
 
-// Nội dung chính của màn hình Chat
+// Giao diện mỗi bạn bè
 @Composable
-fun ChatContent(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colorResource(id = R.color.color_c97c5d))
-    ) {
-        UserListItem(userName = "Người dùng 1")
-        HorizontalDivider(color = Color.Black, thickness = 1.dp) // Thêm Divider
-        UserListItem(userName = "Người dùng 2")
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorResource(id = R.color.color_c97c5d))
-        )
-    }
-}
-
-// Hiển thị thông tin người dùng trong danh sách
-@Composable
-fun UserListItem(userName: String) {
+fun FriendListItem(friend: User, onRemoveFriend: (User) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .border(1.dp, Color.Black) // Viền đen xung quanh
+            .background(colorResource(id = R.color.color_c97c5d))
+            .padding(12.dp),
+
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
@@ -98,32 +239,18 @@ fun UserListItem(userName: String) {
                 .clip(CircleShape)
         )
         Spacer(modifier = Modifier.width(16.dp))
-        Text(text = userName, fontSize = 18.sp)
-    }
-}
-
-// Màn hình chính để hiển thị Chat
-@Composable
-fun ChatScreen(
-    navController: NavController? = null,
-    onBackClick: () -> Unit = { navController?.popBackStack() } // Thêm tham số onBackClick
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        ChatHeader(onBackClick = onBackClick) // Truyền hàm onBackClick
-        ChatContent(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+        Text(
+            text = friend.name,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
         )
-    }
-}
-
-
-// Xem trước giao diện màn hình Chat
-@Preview(showBackground = true)
-@Composable
-fun ChatScreenPreview() {
-    ChessmateTheme {
-        ChatScreen()
+        IconButton(onClick = { onRemoveFriend(friend) }) {
+            Image(
+                painter = painterResource(id = R.drawable.delete),
+                contentDescription = "Xóa bạn bè",
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
