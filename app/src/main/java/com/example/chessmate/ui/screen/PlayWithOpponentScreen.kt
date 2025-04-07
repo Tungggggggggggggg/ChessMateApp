@@ -6,7 +6,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,13 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.chessmate.ui.components.ChessGame
+import com.example.chessmate.model.PieceColor
 import com.example.chessmate.ui.components.Chessboard
-import com.example.chessmate.ui.components.PieceColor
-import com.example.chessmate.ui.theme.ChessmateTheme
+import com.example.chessmate.viewmodel.ChessViewModel
 
 @Composable
 fun CustomDialog(
@@ -35,15 +38,12 @@ fun CustomDialog(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(enabled = false) { /* Ngăn tương tác với màn hình chính */ }
+            .clickable(enabled = false) {}
     ) {
         Box(
             modifier = modifier
                 .fillMaxWidth(0.8f)
-                .background(
-                    color = colorResource(id = R.color.color_c97c5d),
-                    shape = RoundedCornerShape(16.dp)
-                )
+                .background(colorResource(id = R.color.color_c97c5d), shape = RoundedCornerShape(16.dp))
                 .padding(16.dp)
                 .align(Alignment.Center)
         ) {
@@ -67,10 +67,7 @@ fun CustomDialog(
                         modifier = Modifier
                             .width(100.dp)
                             .height(40.dp)
-                            .background(
-                                color = colorResource(id = R.color.color_eed7c5),
-                                shape = RoundedCornerShape(20.dp)
-                            )
+                            .background(colorResource(id = R.color.color_eed7c5), shape = RoundedCornerShape(20.dp))
                             .clickable(onClick = onConfirm),
                         contentAlignment = Alignment.Center
                     ) {
@@ -85,10 +82,7 @@ fun CustomDialog(
                         modifier = Modifier
                             .width(100.dp)
                             .height(40.dp)
-                            .background(
-                                color = Color.LightGray,
-                                shape = RoundedCornerShape(20.dp)
-                            )
+                            .background(Color.LightGray, shape = RoundedCornerShape(20.dp))
                             .clickable(onClick = onDismiss),
                         contentAlignment = Alignment.Center
                     ) {
@@ -120,7 +114,6 @@ fun PlayWithOpponentHeader(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(120.dp)
     ) {
-        // Nút thoát (biểu tượng X) - Đặt ở góc trái trên
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -136,7 +129,6 @@ fun PlayWithOpponentHeader(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Biểu tượng người chơi và văn bản "Đối thủ" - Căn giữa
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -157,7 +149,6 @@ fun PlayWithOpponentHeader(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Điểm và thời gian - Đặt bên trái của Column
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -165,7 +156,6 @@ fun PlayWithOpponentHeader(
                 .padding(top = 24.dp),
             horizontalAlignment = Alignment.Start
         ) {
-
             Text(
                 text = "Điểm: 230",
                 fontSize = 18.sp,
@@ -189,7 +179,6 @@ fun PlayWithOpponentHeader(
                 )
             }
         }
-        // Nút "Kết bạn" - Đặt bên phải của Column
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -210,7 +199,6 @@ fun PlayWithOpponentHeader(
         }
     }
 
-    // Dialog khi nhấn nút thoát
     if (showExitDialog) {
         CustomDialog(
             title = "Bạn có chắc chắn muốn thoát trận đấu không?",
@@ -227,7 +215,7 @@ fun PlayWithOpponentHeader(
 fun PlayWithOpponentFooter(
     onOfferDraw: () -> Unit,
     onSurrender: () -> Unit,
-    onChatClick: () -> Unit = { /* TODO: Xử lý mở chat */ },
+    onChatClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showDrawDialog by remember { mutableStateOf(false) }
@@ -240,7 +228,6 @@ fun PlayWithOpponentFooter(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
-        // Biểu tượng người chơi và văn bản "BẠN" - Căn trái
         Row(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -249,7 +236,7 @@ fun PlayWithOpponentFooter(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Người chơi",
+                contentDescription = "Bạn",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Black
             )
@@ -270,7 +257,6 @@ fun PlayWithOpponentFooter(
                 )
             }
         }
-        // Nút "Cầu hòa" - Đặt ở giữa, lệch trái
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -289,7 +275,6 @@ fun PlayWithOpponentFooter(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Nút "Đầu hàng" - Đặt ở giữa, lệch phải
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -308,7 +293,6 @@ fun PlayWithOpponentFooter(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Nút chat - Đặt trước box thời gian
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -327,7 +311,6 @@ fun PlayWithOpponentFooter(
                 tint = Color.Black
             )
         }
-        // Box thời gian - Đặt bên phải, cùng hàng với "BẠN"
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -347,7 +330,6 @@ fun PlayWithOpponentFooter(
         }
     }
 
-    // Dialog khi nhấn "Câu hòa"
     if (showDrawDialog) {
         CustomDialog(
             title = "Bạn có chắc chắn muốn cầu hòa trận đấu không?",
@@ -359,7 +341,6 @@ fun PlayWithOpponentFooter(
         )
     }
 
-    // Dialog khi nhấn "Đầu hàng"
     if (showSurrenderDialog) {
         CustomDialog(
             title = "Bạn có chắc chắn muốn đầu hàng trận đấu không?",
@@ -375,19 +356,11 @@ fun PlayWithOpponentFooter(
 @Composable
 fun PlayWithOpponentScreen(
     navController: NavController? = null,
-    onBackClick: () -> Unit = { navController?.popBackStack() }
+    onBackClick: () -> Unit = { navController?.popBackStack() },
+    viewModel: ChessViewModel = viewModel()
 ) {
-    val gameState = remember { ChessGame() }
     var showGameOverDialog by remember { mutableStateOf(false) }
     var gameResult by remember { mutableStateOf<String?>(null) }
-
-    // Kiểm tra trạng thái trò chơi sau mỗi nước đi
-    LaunchedEffect(gameState.getCurrentTurn()) {
-        if (gameState.isGameOver()) {
-            gameResult = gameState.getGameResult()
-            showGameOverDialog = true
-        }
-    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -402,25 +375,25 @@ fun PlayWithOpponentScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            // Thanh tiêu đề
             PlayWithOpponentHeader(
                 onBackClick = onBackClick,
                 onExitConfirm = onBackClick
             )
-            // Bàn cờ
             Chessboard(
+                board = viewModel.board.value,
+                highlightedSquares = viewModel.highlightedSquares.value,
+                onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             )
-            // Footer
             PlayWithOpponentFooter(
                 onOfferDraw = {
                     gameResult = "Game is a draw by agreement."
                     showGameOverDialog = true
                 },
                 onSurrender = {
-                    gameResult = if (gameState.getCurrentTurn() == PieceColor.WHITE) {
+                    gameResult = if (viewModel.currentTurn.value == PieceColor.WHITE) {
                         "Black wins by surrender!"
                     } else {
                         "White wins by surrender!"
@@ -431,10 +404,9 @@ fun PlayWithOpponentScreen(
         }
     }
 
-    // Dialog khi trò chơi kết thúc
-    if (showGameOverDialog) {
+    if (viewModel.isGameOver.value || showGameOverDialog) {
         CustomDialog(
-            title = gameResult ?: "Game ended.",
+            title = gameResult ?: viewModel.gameResult.value ?: "Game ended.",
             onConfirm = {
                 showGameOverDialog = false
                 navController?.popBackStack()
@@ -444,13 +416,5 @@ fun PlayWithOpponentScreen(
                 navController?.popBackStack()
             }
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PlayWithOpponentScreenPreview() {
-    ChessmateTheme {
-        PlayWithOpponentScreen()
     }
 }

@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,16 +15,43 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.chessmate.ui.components.ChessGame
+import com.example.chessmate.model.PieceColor
+import com.example.chessmate.model.PieceType
 import com.example.chessmate.ui.components.Chessboard
-import com.example.chessmate.ui.theme.ChessmateTheme
+import com.example.chessmate.viewmodel.FriendChessViewModel
+
+@Composable
+fun PromotionDialog(
+    onSelect: (PieceType) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Chọn quân để phong cấp") },
+        text = {
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = { onSelect(PieceType.QUEEN) }) { Text("Hậu") }
+                Button(onClick = { onSelect(PieceType.ROOK) }) { Text("Xe") }
+                Button(onClick = { onSelect(PieceType.BISHOP) }) { Text("Tượng") }
+                Button(onClick = { onSelect(PieceType.KNIGHT) }) { Text("Mã") }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {}
+    )
+}
 
 @Composable
 fun PlayWithFriendHeader(
     onBackClick: () -> Unit,
+    currentTurn: PieceColor,
+    time: Int,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -34,7 +61,6 @@ fun PlayWithFriendHeader(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
-        // Nút thoát (biểu tượng X) - Đặt ở góc trái trên
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -50,7 +76,6 @@ fun PlayWithFriendHeader(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Biểu tượng người chơi và văn bản "Người chơi 2" - Căn giữa
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -70,8 +95,13 @@ fun PlayWithFriendHeader(
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Lượt của: ${if (currentTurn == PieceColor.WHITE) "Trắng" else "Đen"}",
+                fontSize = 12.sp,
+                color = Color.Black
+            )
         }
-        // Box thời gian - Đặt bên trái của Column
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -83,7 +113,7 @@ fun PlayWithFriendHeader(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "10:00",
+                text = "${time / 60}:${(time % 60).toString().padStart(2, '0')}",
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -94,6 +124,8 @@ fun PlayWithFriendHeader(
 
 @Composable
 fun PlayWithFriendFooter(
+    currentTurn: PieceColor,
+    time: Int,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -103,7 +135,6 @@ fun PlayWithFriendFooter(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
-        // Biểu tượng người chơi và văn bản "Người chơi 1" - Căn giữa
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -123,8 +154,13 @@ fun PlayWithFriendFooter(
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Lượt của: ${if (currentTurn == PieceColor.WHITE) "Trắng" else "Đen"}",
+                fontSize = 12.sp,
+                color = Color.Black
+            )
         }
-        // Box thời gian - Đặt bên phải của Column
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -136,7 +172,7 @@ fun PlayWithFriendFooter(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "10:00",
+                text = "${time / 60}:${(time % 60).toString().padStart(2, '0')}",
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -148,20 +184,9 @@ fun PlayWithFriendFooter(
 @Composable
 fun PlayWithFriendScreen(
     navController: NavController? = null,
-    onBackClick: () -> Unit = { navController?.popBackStack() }
+    onBackClick: () -> Unit = { navController?.popBackStack() },
+    viewModel: FriendChessViewModel = viewModel()
 ) {
-    val gameState = remember { ChessGame() }
-    var showGameOverDialog by remember { mutableStateOf(false) }
-    var gameResult by remember { mutableStateOf<String?>(null) }
-
-    // Kiểm tra trạng thái trò chơi sau mỗi nước đi
-    LaunchedEffect(gameState.getCurrentTurn()) {
-        if (gameState.isGameOver()) {
-            gameResult = gameState.getGameResult()
-            showGameOverDialog = true
-        }
-    }
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -175,40 +200,45 @@ fun PlayWithFriendScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            // Thanh tiêu đề
-            PlayWithFriendHeader(onBackClick = onBackClick)
-            // Bàn cờ
+            PlayWithFriendHeader(
+                onBackClick = onBackClick,
+                currentTurn = viewModel.currentTurn.value,
+                time = viewModel.blackTime.value
+            )
             Chessboard(
+                board = viewModel.board.value,
+                highlightedSquares = viewModel.highlightedSquares.value,
+                onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             )
-            // Footer
-            PlayWithFriendFooter()
+            PlayWithFriendFooter(
+                currentTurn = viewModel.currentTurn.value,
+                time = viewModel.whiteTime.value
+            )
         }
     }
 
-    if (showGameOverDialog) {
+    if (viewModel.getPendingPromotion() != null) {
+        PromotionDialog(
+            onSelect = { pieceType ->
+                viewModel.promotePawn(pieceType)
+            },
+            onDismiss = {}
+        )
+    }
+
+    if (viewModel.isGameOver.value) {
         AlertDialog(
-            onDismissRequest = { showGameOverDialog = false },
+            onDismissRequest = { navController?.popBackStack() },
             title = { Text("Game Over") },
-            text = { Text(gameResult ?: "Game ended.") },
+            text = { Text(viewModel.gameResult.value ?: "Game ended.") },
             confirmButton = {
-                Button(onClick = {
-                    showGameOverDialog = false
-                    navController?.popBackStack()
-                }) {
+                Button(onClick = { navController?.popBackStack() }) {
                     Text("OK")
                 }
             }
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PlayWithFriendScreenPreview() {
-    ChessmateTheme {
-        PlayWithFriendScreen()
     }
 }

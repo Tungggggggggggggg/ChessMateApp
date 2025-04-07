@@ -6,7 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,69 +16,65 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.chessmate.R
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.chessmate.model.ChessPiece
+import com.example.chessmate.model.Move
+import com.example.chessmate.model.PieceColor
+import com.example.chessmate.model.PieceType
+import com.example.chessmate.model.Position
 
 @Composable
-fun Chessboard(modifier: Modifier = Modifier) {
-    // Quản lý trạng thái trò chơi
-    val gameState = remember { ChessGame() }
-    var highlightedSquares by remember { mutableStateOf<List<Position>>(emptyList()) }
-
-    // Tạo bàn cờ với các nhãn số và chữ
+fun Chessboard(
+    board: Array<Array<ChessPiece?>>,
+    highlightedSquares: List<Move>,
+    onSquareClicked: (row: Int, col: Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .wrapContentSize(Alignment.Center)
             .border(5.dp, colorResource(id = R.color.color_c89f9c))
             .padding(5.dp)
     ) {
-        // Khoảng trống phía trên bàn cờ
         Row(
             modifier = Modifier
                 .size(width = 360.dp, height = 20.dp)
                 .background(colorResource(id = R.color.color_c89f9c))
         ) {}
-
-        // Hàng chứa bàn cờ và nhãn số bên phải
         Row {
-            // Khoảng trống bên trái bàn cờ
             Column(
                 modifier = Modifier
                     .size(width = 20.dp, height = 320.dp)
                     .background(colorResource(id = R.color.color_c89f9c))
             ) {}
-
-            // Tạo bàn cờ 8x8
             Column {
                 for (row in 7 downTo 0) {
                     Row {
                         for (col in 0 until 8) {
                             val isWhiteSquare = (row + col) % 2 == 1
-                            val squareColor = if (isWhiteSquare) {
-                                Color.White
-                            } else {
-                                colorResource(id = R.color.color_b36a5e)
-                            }
-                            val isHighlighted = highlightedSquares.contains(Position(row, col))
+                            val squareColor = if (isWhiteSquare) Color.White else colorResource(id = R.color.color_b36a5e)
+                            val position = Position(row, col)
+                            val highlight = highlightedSquares.find { it.position == position }
+                            val isHighlighted = highlight != null
+                            val isCaptureMove = highlight?.captures == true
 
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .background(
-                                        if (isHighlighted) Color(0xFF90EE90) else squareColor
-                                    )
-                                    .clickable {
-                                        if (isHighlighted) {
-                                            // Di chuyển quân cờ
-                                            gameState.movePiece(Position(row, col))
-                                            highlightedSquares = emptyList()
-                                        } else {
-                                            // Chọn quân cờ và hiển thị các ô hợp lệ
-                                            highlightedSquares = gameState.getValidMoves(row, col)
-                                        }
-                                    },
+                                    .background(squareColor)
+                                    .clickable { onSquareClicked(row, col) },
                                 contentAlignment = Alignment.Center
                             ) {
-                                val piece = gameState.getPieceAt(row, col)
+                                if (isHighlighted) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .background(
+                                                color = if (isCaptureMove) Color.Red else Color(0xFF90EE90),
+                                                shape = androidx.compose.foundation.shape.CircleShape
+                                            )
+                                    )
+                                }
+                                val piece = board[row][col]
                                 if (piece != null) {
                                     val pieceDrawable = getPieceDrawable(piece)
                                     Image(
@@ -92,8 +88,6 @@ fun Chessboard(modifier: Modifier = Modifier) {
                     }
                 }
             }
-
-            // Nhãn số (1-8) bên phải bàn cờ
             Column {
                 for (row in 7 downTo 0) {
                     Box(
@@ -112,17 +106,12 @@ fun Chessboard(modifier: Modifier = Modifier) {
                 }
             }
         }
-
-        // Hàng chứa nhãn chữ (A-H) bên dưới bàn cờ
         Row {
-            // Ô trống ở góc dưới bên trái
             Box(
                 modifier = Modifier
                     .size(width = 20.dp, height = 20.dp)
                     .background(colorResource(id = R.color.color_c89f9c))
             )
-
-            // Nhãn chữ A-H
             for (col in 0 until 8) {
                 val letter = ('A' + col).toString()
                 Box(
@@ -139,8 +128,6 @@ fun Chessboard(modifier: Modifier = Modifier) {
                     )
                 }
             }
-
-            // Ô trống ở góc dưới bên phải
             Box(
                 modifier = Modifier
                     .size(width = 20.dp, height = 20.dp)
@@ -150,7 +137,6 @@ fun Chessboard(modifier: Modifier = Modifier) {
     }
 }
 
-// Lấy drawable tương ứng với quân cờ
 @Composable
 fun getPieceDrawable(piece: ChessPiece): Int {
     return when (piece.type) {
@@ -161,10 +147,4 @@ fun getPieceDrawable(piece: ChessPiece): Int {
         PieceType.QUEEN -> if (piece.color == PieceColor.WHITE) R.drawable.white_queen else R.drawable.black_queen
         PieceType.KING -> if (piece.color == PieceColor.WHITE) R.drawable.white_king else R.drawable.black_king
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewChessboard() {
-    Chessboard()
 }

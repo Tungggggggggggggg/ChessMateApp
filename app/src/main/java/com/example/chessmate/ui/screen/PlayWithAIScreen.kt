@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,16 +15,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.chessmate.ui.components.ChessGame
-import com.example.chessmate.ui.components.ChessPiece
-import com.example.chessmate.ui.components.Position
+import com.example.chessmate.model.PieceColor
 import com.example.chessmate.ui.components.Chessboard
-import com.example.chessmate.ui.components.PieceColor
-import com.example.chessmate.ui.theme.ChessmateTheme
-import kotlinx.coroutines.delay
+import com.example.chessmate.viewmodel.ChessViewModel
 
 @Composable
 fun PlayWithAIHeader(
@@ -39,7 +35,6 @@ fun PlayWithAIHeader(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
-        // Nút thoát (biểu tượng X) - Đặt ở góc trái trên
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -55,7 +50,6 @@ fun PlayWithAIHeader(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Biểu tượng người chơi và văn bản "AI" - Căn giữa
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -64,7 +58,7 @@ fun PlayWithAIHeader(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Người chơi",
+                contentDescription = "AI",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Black
             )
@@ -76,15 +70,12 @@ fun PlayWithAIHeader(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(2.dp))
-            // Hiển thị lượt đi hiện tại
             Text(
                 text = "Lượt của: ${if (currentTurn == PieceColor.WHITE) "Trắng" else "Đen"}",
                 fontSize = 12.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Normal
+                color = Color.Black
             )
         }
-        // Box thời gian - Đặt bên trái của Column
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -102,7 +93,6 @@ fun PlayWithAIHeader(
                 fontWeight = FontWeight.Bold
             )
         }
-        // Box chế độ - Đặt bên phải của Column
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -135,7 +125,6 @@ fun PlayWithAIFooter(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
-        // Biểu tượng người chơi và văn bản "BẠN" - Căn giữa
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -144,7 +133,7 @@ fun PlayWithAIFooter(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Người chơi",
+                contentDescription = "Bạn",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Black
             )
@@ -156,15 +145,12 @@ fun PlayWithAIFooter(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(2.dp))
-            // Hiển thị lượt đi hiện tại
             Text(
                 text = "Lượt của: ${if (currentTurn == PieceColor.WHITE) "Trắng" else "Đen"}",
                 fontSize = 12.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Normal
+                color = Color.Black
             )
         }
-        // Box thời gian - Đặt bên phải của Column
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -188,38 +174,9 @@ fun PlayWithAIFooter(
 @Composable
 fun PlayWithAIScreen(
     navController: NavController? = null,
-    onBackClick: () -> Unit = { navController?.popBackStack() }
+    onBackClick: () -> Unit = { navController?.popBackStack() },
+    viewModel: ChessViewModel = viewModel()
 ) {
-    val gameState = remember { ChessGame() }
-    var showGameOverDialog by remember { mutableStateOf(false) }
-    var gameResult by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(gameState.getCurrentTurn()) {
-        if (gameState.getCurrentTurn() == PieceColor.BLACK && !gameState.isGameOver()) {
-            delay(1000L) // Đợi 1 giây để mô phỏng AI suy nghĩ
-            val allMoves = mutableListOf<Pair<ChessPiece, Position>>()
-            for (row in 0 until 8) {
-                for (col in 0 until 8) {
-                    val piece = gameState.getPieceAt(row, col)
-                    if (piece != null && piece.color == PieceColor.BLACK) {
-                        val moves = gameState.getValidMoves(row, col)
-                        moves.forEach { move ->
-                            allMoves.add(Pair(piece, move))
-                        }
-                    }
-                }
-            }
-            if (allMoves.isNotEmpty()) {
-                val randomMove = allMoves.random()
-                gameState.movePiece(randomMove.second)
-            }
-        }
-        if (gameState.isGameOver()) {
-            gameResult = gameState.getGameResult()
-            showGameOverDialog = true
-        }
-    }
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -233,43 +190,32 @@ fun PlayWithAIScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            // Thanh tiêu đề
             PlayWithAIHeader(
                 onBackClick = onBackClick,
-                currentTurn = gameState.getCurrentTurn()
+                currentTurn = viewModel.currentTurn.value
             )
-            // Bàn cờ
             Chessboard(
+                board = viewModel.board.value,
+                highlightedSquares = viewModel.highlightedSquares.value,
+                onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             )
-            // Footer
-            PlayWithAIFooter(currentTurn = gameState.getCurrentTurn())
+            PlayWithAIFooter(currentTurn = viewModel.currentTurn.value)
         }
     }
 
-    if (showGameOverDialog) {
+    if (viewModel.isGameOver.value) {
         AlertDialog(
-            onDismissRequest = { showGameOverDialog = false },
+            onDismissRequest = { navController?.popBackStack() },
             title = { Text("Game Over") },
-            text = { Text(gameResult ?: "Game ended.") },
+            text = { Text(viewModel.gameResult.value ?: "Game ended.") },
             confirmButton = {
-                Button(onClick = {
-                    showGameOverDialog = false
-                    navController?.popBackStack()
-                }) {
+                Button(onClick = { navController?.popBackStack() }) {
                     Text("OK")
                 }
             }
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PlayWithAIScreenPreview() {
-    ChessmateTheme {
-        PlayWithAIScreen()
     }
 }

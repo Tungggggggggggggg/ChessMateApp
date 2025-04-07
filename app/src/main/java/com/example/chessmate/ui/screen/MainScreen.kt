@@ -14,11 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.ui.components.ButtonItem
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.Logo
+import com.example.chessmate.viewmodel.ChessViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -103,21 +105,22 @@ fun MainButtonRow(navController: NavController) {
                 text = "Đấu với AI",
                 colorId = R.color.color_c89f9c,
                 onClick = { navController.navigate("play_with_ai") }
-
             )
             Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
                 text = "Chơi với bạn",
                 colorId = R.color.color_c89f9c,
                 onClick = { navController.navigate("play_with_friend") }
-
             )
         }
     }
 }
 
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(
+    navController: NavController,
+    viewModel: ChessViewModel = viewModel()
+) {
     val auth = FirebaseAuth.getInstance()
 
     LaunchedEffect(Unit) {
@@ -147,7 +150,11 @@ fun MainScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(20.dp))
             MainButtonRow(navController)
             Spacer(modifier = Modifier.height(20.dp))
-            Chessboard()
+            Chessboard(
+                board = viewModel.board.value,
+                highlightedSquares = viewModel.highlightedSquares.value,
+                onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) }
+            )
         }
     }
 }
