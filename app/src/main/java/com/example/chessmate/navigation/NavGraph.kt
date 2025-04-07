@@ -22,5 +22,8 @@ fun NavGraph(
         composable("main_screen") { MainScreen(navController) }
         composable("match_history") { MatchHistoryScreen(navController) }
         composable("chat") { ChatScreen(navController) }
+        composable("play_with_ai") { PlayWithAIScreen(navController) }
+        composable("play_with_friend") { PlayWithFriendScreen(navController) }
+        composable("play_with_opponent") { PlayWithOpponentScreen(navController) }
     }
 }

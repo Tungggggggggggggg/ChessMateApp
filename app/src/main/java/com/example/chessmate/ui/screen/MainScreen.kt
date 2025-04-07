@@ -101,12 +101,16 @@ fun MainButtonRow(navController: NavController) {
         ) {
             ButtonItem(
                 text = "Đấu với AI",
-                colorId = R.color.color_c89f9c
+                colorId = R.color.color_c89f9c,
+                onClick = { navController.navigate("play_with_ai") }
+
             )
             Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
                 text = "Chơi với bạn",
-                colorId = R.color.color_c89f9c
+                colorId = R.color.color_c89f9c,
+                onClick = { navController.navigate("play_with_friend") }
+
             )
         }
     }
