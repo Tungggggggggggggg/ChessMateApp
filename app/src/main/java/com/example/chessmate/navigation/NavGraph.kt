@@ -19,7 +19,6 @@ fun NavGraph(
         composable("find_friends") { FindFriendsScreen(navController) }
         composable("loading") { LoadingScreen() }
         composable("reset_password") { ResetPasswordScreen(navController) }
-        composable("play") { PlayScreen(navController) }
         composable("main_screen") { MainScreen(navController) }
         composable("match_history") { MatchHistoryScreen(navController) }
         composable("chat") { ChatScreen(navController) }

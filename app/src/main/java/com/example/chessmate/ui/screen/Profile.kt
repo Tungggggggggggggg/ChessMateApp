@@ -166,7 +166,6 @@ fun ProfileContent(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(20.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -197,7 +196,6 @@ fun ProfileContent(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(20.dp))
         Column(
             modifier = Modifier
                 .fillMaxWidth()

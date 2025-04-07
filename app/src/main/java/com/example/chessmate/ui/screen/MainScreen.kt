@@ -85,7 +85,7 @@ fun MainButtonRow(navController: NavController) {
             ButtonItem(
                 text = "Chơi",
                 colorId = R.color.color_c89f9c,
-                onClick = { navController.navigate("play") }
+                onClick = { navController.navigate("loading") }
             )
             Spacer(modifier = Modifier.width(32.dp))
             ButtonItem(
