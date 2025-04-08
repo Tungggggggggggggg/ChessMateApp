@@ -64,6 +64,15 @@ fun Chessboard(
                                     .clickable { onSquareClicked(row, col) },
                                 contentAlignment = Alignment.Center
                             ) {
+                                val piece = board[row][col]
+                                if (piece != null) {
+                                    val pieceDrawable = getPieceDrawable(piece)
+                                    Image(
+                                        painter = painterResource(id = pieceDrawable),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
                                 if (isHighlighted) {
                                     Box(
                                         modifier = Modifier
@@ -72,15 +81,6 @@ fun Chessboard(
                                                 color = if (isCaptureMove) Color.Red else Color(0xFF90EE90),
                                                 shape = androidx.compose.foundation.shape.CircleShape
                                             )
-                                    )
-                                }
-                                val piece = board[row][col]
-                                if (piece != null) {
-                                    val pieceDrawable = getPieceDrawable(piece)
-                                    Image(
-                                        painter = painterResource(id = pieceDrawable),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(32.dp)
                                     )
                                 }
                             }

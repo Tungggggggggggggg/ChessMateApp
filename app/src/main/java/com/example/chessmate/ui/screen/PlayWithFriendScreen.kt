@@ -7,45 +7,24 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.model.PieceColor
-import com.example.chessmate.model.PieceType
 import com.example.chessmate.ui.components.Chessboard
+import com.example.chessmate.ui.components.PromotionDialog
 import com.example.chessmate.viewmodel.FriendChessViewModel
-
-@Composable
-fun PromotionDialog(
-    onSelect: (PieceType) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Chọn quân để phong cấp") },
-        text = {
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(onClick = { onSelect(PieceType.QUEEN) }) { Text("Hậu") }
-                Button(onClick = { onSelect(PieceType.ROOK) }) { Text("Xe") }
-                Button(onClick = { onSelect(PieceType.BISHOP) }) { Text("Tượng") }
-                Button(onClick = { onSelect(PieceType.KNIGHT) }) { Text("Mã") }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {}
-    )
-}
 
 @Composable
 fun PlayWithFriendHeader(
@@ -187,6 +166,12 @@ fun PlayWithFriendScreen(
     onBackClick: () -> Unit = { navController?.popBackStack() },
     viewModel: FriendChessViewModel = viewModel()
 ) {
+    val showGameOverDialog = remember { mutableStateOf(false) }
+
+    if (viewModel.isGameOver.value && !showGameOverDialog.value) {
+        showGameOverDialog.value = true
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -220,8 +205,9 @@ fun PlayWithFriendScreen(
         }
     }
 
-    if (viewModel.getPendingPromotion() != null) {
+    if (viewModel.isPromoting.value) {
         PromotionDialog(
+            currentTurn = viewModel.currentTurn.value,
             onSelect = { pieceType ->
                 viewModel.promotePawn(pieceType)
             },
@@ -229,16 +215,47 @@ fun PlayWithFriendScreen(
         )
     }
 
-    if (viewModel.isGameOver.value) {
+    if (showGameOverDialog.value) {
         AlertDialog(
-            onDismissRequest = { navController?.popBackStack() },
-            title = { Text("Game Over") },
-            text = { Text(viewModel.gameResult.value ?: "Game ended.") },
+            onDismissRequest = {},
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Ván đấu kết thúc",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = viewModel.gameResult.value ?: "Game ended.",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
             confirmButton = {
-                Button(onClick = { navController?.popBackStack() }) {
-                    Text("OK")
+                Button(
+                    onClick = {
+                        showGameOverDialog.value = false
+                        navController?.popBackStack()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
                 }
-            }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 }

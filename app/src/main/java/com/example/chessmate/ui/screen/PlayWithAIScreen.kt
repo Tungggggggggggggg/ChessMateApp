@@ -4,15 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +22,7 @@ import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.model.PieceColor
 import com.example.chessmate.ui.components.Chessboard
+import com.example.chessmate.ui.components.PromotionDialog
 import com.example.chessmate.viewmodel.ChessViewModel
 
 @Composable
@@ -76,40 +79,6 @@ fun PlayWithAIHeader(
                 color = Color.Black
             )
         }
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(x = (-80).dp)
-                .padding(top = 36.dp)
-                .width(80.dp)
-                .height(32.dp)
-                .background(colorResource(id = R.color.color_eed7c5), shape = RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "10:00",
-                fontSize = 18.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(x = 98.dp)
-                .padding(top = 36.dp)
-                .width(120.dp)
-                .height(32.dp)
-                .background(colorResource(id = R.color.color_eed7c5), shape = RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Chế độ: Khó",
-                fontSize = 16.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
     }
 }
 
@@ -151,23 +120,6 @@ fun PlayWithAIFooter(
                 color = Color.Black
             )
         }
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(x = 80.dp)
-                .padding(top = 20.dp)
-                .width(80.dp)
-                .height(32.dp)
-                .background(colorResource(id = R.color.color_eed7c5), shape = RoundedCornerShape(20.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "10:00",
-                fontSize = 18.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
     }
 }
 
@@ -177,6 +129,12 @@ fun PlayWithAIScreen(
     onBackClick: () -> Unit = { navController?.popBackStack() },
     viewModel: ChessViewModel = viewModel()
 ) {
+    val showGameOverDialog = remember { mutableStateOf(viewModel.isGameOver.value) }
+
+    if (viewModel.isGameOver.value && !showGameOverDialog.value) {
+        showGameOverDialog.value = true
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -206,16 +164,57 @@ fun PlayWithAIScreen(
         }
     }
 
-    if (viewModel.isGameOver.value) {
+    if (viewModel.isPromoting.value) {
+        PromotionDialog(
+            currentTurn = viewModel.currentTurn.value,
+            onSelect = { pieceType ->
+                viewModel.promotePawn(pieceType)
+            },
+            onDismiss = {}
+        )
+    }
+
+    if (showGameOverDialog.value) {
         AlertDialog(
-            onDismissRequest = { navController?.popBackStack() },
-            title = { Text("Game Over") },
-            text = { Text(viewModel.gameResult.value ?: "Game ended.") },
+            onDismissRequest = {},
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Ván đấu kết thúc",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = viewModel.gameResult.value ?: "Game ended.",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
             confirmButton = {
-                Button(onClick = { navController?.popBackStack() }) {
-                    Text("OK")
+                Button(
+                    onClick = {
+                        showGameOverDialog.value = false
+                        navController?.popBackStack()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
                 }
-            }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 }

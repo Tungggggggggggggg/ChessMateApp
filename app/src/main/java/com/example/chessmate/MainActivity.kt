@@ -17,12 +17,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             ChessmateTheme {
                 val navController = rememberNavController()
-                // Kiểm tra trạng thái đăng nhập
                 val auth = FirebaseAuth.getInstance()
                 val startDestination = if (auth.currentUser != null) {
-                    "main_screen" // Nếu đã đăng nhập, đi thẳng đến MainScreen
+                    "main_screen"
                 } else {
-                    "home" // Nếu chưa đăng nhập, đi đến HomeScreen
+                    "home"
                 }
                 NavGraph(navController = navController, startDestination = startDestination)
             }
