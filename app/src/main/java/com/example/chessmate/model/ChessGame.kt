@@ -28,6 +28,8 @@ class ChessGame {
         initializeBoard()
     }
 
+    fun getLastMove(): Pair<Position, Position>? = lastMove
+
     private fun initializeBoard() {
         board[0][0] = ChessPiece(PieceType.ROOK, PieceColor.WHITE, Position(0, 0))
         board[0][1] = ChessPiece(PieceType.KNIGHT, PieceColor.WHITE, Position(0, 1))

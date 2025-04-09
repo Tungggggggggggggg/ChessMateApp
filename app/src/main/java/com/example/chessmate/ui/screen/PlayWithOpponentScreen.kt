@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +26,9 @@ import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.model.PieceColor
 import com.example.chessmate.ui.components.Chessboard
-import com.example.chessmate.viewmodel.ChessViewModel
+import com.example.chessmate.ui.components.PromotionDialog
+import com.example.chessmate.viewmodel.OnlineChessViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun CustomDialog(
@@ -103,6 +106,8 @@ fun CustomDialog(
 fun PlayWithOpponentHeader(
     onBackClick: () -> Unit,
     onExitConfirm: () -> Unit,
+    whiteTime: Int,
+    blackTime: Int,
     modifier: Modifier = Modifier
 ) {
     var showExitDialog by remember { mutableStateOf(false) }
@@ -172,7 +177,7 @@ fun PlayWithOpponentHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "10:00",
+                    text = formatTime(blackTime),
                     fontSize = 18.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Bold
@@ -215,6 +220,7 @@ fun PlayWithOpponentHeader(
 fun PlayWithOpponentFooter(
     onOfferDraw: () -> Unit,
     onSurrender: () -> Unit,
+    whiteTime: Int,
     onChatClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -322,7 +328,7 @@ fun PlayWithOpponentFooter(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "10:00",
+                text = formatTime(whiteTime),
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -354,13 +360,29 @@ fun PlayWithOpponentFooter(
 }
 
 @Composable
+fun formatTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return String.format("%02d:%02d", minutes, remainingSeconds)
+}
+
+@Composable
 fun PlayWithOpponentScreen(
     navController: NavController? = null,
+    matchId: String = "",
     onBackClick: () -> Unit = { navController?.popBackStack() },
-    viewModel: ChessViewModel = viewModel()
+    viewModel: OnlineChessViewModel = viewModel()
 ) {
     var showGameOverDialog by remember { mutableStateOf(false) }
     var gameResult by remember { mutableStateOf<String?>(null) }
+    var showDrawRequestDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(matchId) {
+        if (viewModel.matchId.value != matchId) {
+            viewModel.matchId.value = matchId
+            viewModel.listenToMatchUpdates()
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -377,7 +399,9 @@ fun PlayWithOpponentScreen(
         ) {
             PlayWithOpponentHeader(
                 onBackClick = onBackClick,
-                onExitConfirm = onBackClick
+                onExitConfirm = onBackClick,
+                whiteTime = viewModel.whiteTime.value,
+                blackTime = viewModel.blackTime.value
             )
             Chessboard(
                 board = viewModel.board.value,
@@ -389,19 +413,48 @@ fun PlayWithOpponentScreen(
             )
             PlayWithOpponentFooter(
                 onOfferDraw = {
-                    gameResult = "Game is a draw by agreement."
-                    showGameOverDialog = true
+                    viewModel.requestDraw()
                 },
                 onSurrender = {
-                    gameResult = if (viewModel.currentTurn.value == PieceColor.WHITE) {
+                    viewModel.surrender()
+                    gameResult = if (viewModel.playerColor.value == PieceColor.WHITE) {
                         "Black wins by surrender!"
                     } else {
                         "White wins by surrender!"
                     }
                     showGameOverDialog = true
-                }
+                },
+                whiteTime = viewModel.whiteTime.value
             )
         }
+    }
+
+    if (viewModel.isPromoting.value) {
+        PromotionDialog(
+            currentTurn = viewModel.currentTurn.value,
+            onSelect = { pieceType ->
+                viewModel.promotePawn(pieceType)
+            },
+            onDismiss = {}
+        )
+    }
+
+    if (viewModel.drawRequest.value != null && viewModel.drawRequest.value != FirebaseAuth.getInstance().currentUser?.uid) {
+        showDrawRequestDialog = true
+    }
+
+    if (showDrawRequestDialog) {
+        CustomDialog(
+            title = "Đối thủ đã gửi yêu cầu cầu hòa. Bạn có đồng ý không?",
+            onConfirm = {
+                showDrawRequestDialog = false
+                viewModel.acceptDraw()
+            },
+            onDismiss = {
+                showDrawRequestDialog = false
+                viewModel.declineDraw()
+            }
+        )
     }
 
     if (viewModel.isGameOver.value || showGameOverDialog) {
