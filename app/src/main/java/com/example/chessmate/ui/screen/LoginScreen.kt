@@ -233,7 +233,7 @@ fun LoginScreen(navController: NavController? = null) {
                                             "email" to (user.email ?: ""),
                                             "createdAt" to currentDate,
                                             "description" to "Không có mô tả",
-                                            "rating" to 0,
+                                            "score" to 0,
                                             "userId" to userId
                                         )
                                         firestore.collection("users")
@@ -288,8 +288,8 @@ fun LoginScreen(navController: NavController? = null) {
                                     needsUpdate["description"] = "Không có mô tả"
                                 }
 
-                                if (!userData.containsKey("rating")) {
-                                    needsUpdate["rating"] = 0
+                                if (!userData.containsKey("score")) {
+                                    needsUpdate["score"] = 0
                                 }
 
                                 if (needsUpdate.isNotEmpty()) {
@@ -319,7 +319,7 @@ fun LoginScreen(navController: NavController? = null) {
                                     "email" to email,
                                     "createdAt" to currentDate,
                                     "description" to "Không có mô tả",
-                                    "rating" to 0,
+                                    "score" to 0,
                                     "userId" to userId,
                                     "username" to username
                                 )

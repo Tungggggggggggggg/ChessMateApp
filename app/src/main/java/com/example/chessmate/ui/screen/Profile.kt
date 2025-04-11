@@ -105,21 +105,21 @@ fun ProfileContent(
     description: String = "",
     onDescriptionChange: (String) -> Unit = {},
     onEditClick: () -> Unit = {},
-    onSaveClick: (String?) -> Unit = { _ -> }, // Thay đổi signature của onSaveClick
+    onSaveClick: (String?) -> Unit = { _ -> },
     onMatchHistoryClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     var editableName by remember { mutableStateOf(userData?.get("name")?.toString() ?: "") }
-    val scrollState = rememberScrollState() // Tạo state cho việc cuộn
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(colorResource(id = R.color.color_c97c5d))
-            .verticalScroll(scrollState) // Thêm khả năng cuộn dọc
-            .padding(bottom = 80.dp), // Thêm padding dưới để tránh bị che bởi bàn phím (ước tính)
+            .verticalScroll(scrollState)
+            .padding(bottom = 80.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp) // Sử dụng spacedBy để có khoảng cách giữa các phần
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Spacer(modifier = Modifier.height(20.dp))
         Image(
@@ -203,7 +203,7 @@ fun ProfileContent(
                 .border(1.dp, Color.Black)
                 .background(colorResource(id = R.color.color_eee2df))
                 .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp) // Thêm khoảng cách bên trong container thông tin
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (isEditing) {
                 EditableProfileInfoRow(label = "Tên:", value = editableName, onValueChange = { editableName = it })
@@ -212,7 +212,7 @@ fun ProfileContent(
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
-                ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "")
+                ProfileInfoRow(label = "Điểm:", value = userData?.get("score")?.toString() ?: "")
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 BasicTextField(
                     value = description,
@@ -247,7 +247,7 @@ fun ProfileContent(
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 ProfileInfoRow(label = "Ngày tạo:", value = userData?.get("createdAt")?.toString() ?: "")
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
-                ProfileInfoRow(label = "Xếp hạng:", value = userData?.get("rating")?.toString() ?: "")
+                ProfileInfoRow(label = "Điểm:", value = userData?.get("score")?.toString() ?: "")
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 ProfileInfoRow(label = "Mô tả:", value = description)
             }

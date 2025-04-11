@@ -3,11 +3,7 @@ package com.example.chessmate.viewmodel
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chessmate.model.ChessGame
-import com.example.chessmate.model.Move
-import com.example.chessmate.model.PieceColor
-import com.example.chessmate.model.PieceType
-import com.example.chessmate.model.Position
+import com.example.chessmate.model.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -21,6 +17,7 @@ class ChessViewModel : ViewModel() {
     val isGameOver = mutableStateOf(game.isGameOver())
     val gameResult = mutableStateOf<String?>(null)
     val isPromoting = mutableStateOf(false)
+    val playerColor = mutableStateOf(PieceColor.WHITE) // Thêm playerColor, mặc định là WHITE
 
     fun onSquareClicked(row: Int, col: Int) {
         val position = Position(row, col)
@@ -130,6 +127,7 @@ class FriendChessViewModel : ViewModel() {
     val whiteTime = mutableStateOf(600)
     val blackTime = mutableStateOf(600)
     val isPromoting = mutableStateOf(false)
+    val playerColor = mutableStateOf(PieceColor.WHITE) // Thêm playerColor, mặc định là WHITE
     private var timerJob: Job? = null
 
     init {

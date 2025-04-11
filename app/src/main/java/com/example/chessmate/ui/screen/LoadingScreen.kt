@@ -16,6 +16,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
@@ -25,7 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 
 @Composable
 fun LoadingScreen(
@@ -35,7 +38,6 @@ fun LoadingScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Chuyển hướng khi ghép cặp thành công
     LaunchedEffect(viewModel.matchId.value) {
         if (viewModel.matchId.value != null) {
             navController.navigate("play_with_opponent/${viewModel.matchId.value}") {
@@ -44,7 +46,6 @@ fun LoadingScreen(
         }
     }
 
-    // Hiển thị thông báo lỗi hoặc timeout
     LaunchedEffect(viewModel.matchmakingError.value) {
         viewModel.matchmakingError.value?.let { message ->
             errorMessage = message
@@ -52,7 +53,6 @@ fun LoadingScreen(
         }
     }
 
-    // Xóa khỏi hàng đợi khi thoát màn hình
     LaunchedEffect(Unit) {
         navController.currentBackStackEntry?.savedStateHandle?.set("cancelMatchmaking", false)
         navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Boolean>("cancelMatchmaking")?.observeForever { shouldCancel ->
@@ -102,37 +102,49 @@ fun LoadingScreen(
     }
 
     if (showErrorDialog) {
-        Dialog(onDismissRequest = {
-            showErrorDialog = false
-            navController.popBackStack()
-        }) {
-            Box(
-                modifier = Modifier
-                    .background(Color.White, shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
-                    .padding(16.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+        AlertDialog(
+            onDismissRequest = {
+                showErrorDialog = false
+                navController.popBackStack()
+            },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Lỗi",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = errorMessage ?: "Đã có lỗi xảy ra.",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showErrorDialog = false
+                        navController.popBackStack()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
                 ) {
                     Text(
-                        text = errorMessage ?: "Đã có lỗi xảy ra.",
-                        color = Color.Black,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
                         text = "OK",
-                        color = Color.Blue,
-                        fontSize = 16.sp,
-                        modifier = Modifier
-                            .clickable {
-                                showErrorDialog = false
-                                navController.popBackStack()
-                            }
+                        color = Color.White,
+                        fontSize = 16.sp
                     )
                 }
-            }
-        }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
+        )
     }
 }

@@ -29,85 +29,18 @@ import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
 import com.example.chessmate.viewmodel.OnlineChessViewModel
 import com.google.firebase.auth.FirebaseAuth
-
-@Composable
-fun CustomDialog(
-    title: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f))
-            .clickable(enabled = false) {}
-    ) {
-        Box(
-            modifier = modifier
-                .fillMaxWidth(0.8f)
-                .background(colorResource(id = R.color.color_c97c5d), shape = RoundedCornerShape(16.dp))
-                .padding(16.dp)
-                .align(Alignment.Center)
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(40.dp)
-                            .background(colorResource(id = R.color.color_eed7c5), shape = RoundedCornerShape(20.dp))
-                            .clickable(onClick = onConfirm),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Có",
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(100.dp)
-                            .height(40.dp)
-                            .background(Color.LightGray, shape = RoundedCornerShape(20.dp))
-                            .clickable(onClick = onDismiss),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Không",
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 @Composable
 fun PlayWithOpponentHeader(
     onBackClick: () -> Unit,
     onExitConfirm: () -> Unit,
+    opponentName: String,
+    opponentScore: Int,
     whiteTime: Int,
     blackTime: Int,
+    playerColor: PieceColor?,
     modifier: Modifier = Modifier
 ) {
     var showExitDialog by remember { mutableStateOf(false) }
@@ -142,13 +75,13 @@ fun PlayWithOpponentHeader(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Đối thủ",
+                contentDescription = "$opponentName",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Black
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Đối thủ",
+                text = opponentName,
                 fontSize = 16.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -162,7 +95,7 @@ fun PlayWithOpponentHeader(
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "Điểm: 230",
+                text = "Điểm: $opponentScore",
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -177,7 +110,7 @@ fun PlayWithOpponentHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = formatTime(blackTime),
+                    text = formatTime(if (playerColor == PieceColor.BLACK) whiteTime else blackTime),
                     fontSize = 18.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Bold
@@ -205,13 +138,51 @@ fun PlayWithOpponentHeader(
     }
 
     if (showExitDialog) {
-        CustomDialog(
-            title = "Bạn có chắc chắn muốn thoát trận đấu không?",
-            onConfirm = {
-                showExitDialog = false
-                onExitConfirm()
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Thoát trận đấu",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
-            onDismiss = { showExitDialog = false }
+            text = {
+                Text(
+                    text = "Bạn có chắc chắn muốn thoát trận đấu không?",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitDialog = false
+                        onExitConfirm()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 }
@@ -220,7 +191,11 @@ fun PlayWithOpponentHeader(
 fun PlayWithOpponentFooter(
     onOfferDraw: () -> Unit,
     onSurrender: () -> Unit,
+    playerName: String,
+    playerScore: Int,
     whiteTime: Int,
+    blackTime: Int,
+    playerColor: PieceColor?,
     onChatClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -242,21 +217,21 @@ fun PlayWithOpponentFooter(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Bạn",
+                contentDescription = "$playerName",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Black
             )
             Spacer(modifier = Modifier.width(4.dp))
             Column {
                 Text(
-                    text = "BẠN",
+                    text = playerName,
                     fontSize = 16.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Điểm: 250",
+                    text = "Điểm: $playerScore",
                     fontSize = 16.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Bold
@@ -328,7 +303,7 @@ fun PlayWithOpponentFooter(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = formatTime(whiteTime),
+                text = formatTime(if (playerColor == PieceColor.WHITE) whiteTime else blackTime),
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -337,24 +312,100 @@ fun PlayWithOpponentFooter(
     }
 
     if (showDrawDialog) {
-        CustomDialog(
-            title = "Bạn có chắc chắn muốn cầu hòa trận đấu không?",
-            onConfirm = {
-                showDrawDialog = false
-                onOfferDraw()
+        AlertDialog(
+            onDismissRequest = { showDrawDialog = false },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Cầu hòa",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
-            onDismiss = { showDrawDialog = false }
+            text = {
+                Text(
+                    text = "Bạn có chắc chắn muốn gửi yêu cầu cầu hòa không?",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDrawDialog = false
+                        onOfferDraw()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDrawDialog = false }) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 
     if (showSurrenderDialog) {
-        CustomDialog(
-            title = "Bạn có chắc chắn muốn đầu hàng trận đấu không?",
-            onConfirm = {
-                showSurrenderDialog = false
-                onSurrender()
+        AlertDialog(
+            onDismissRequest = { showSurrenderDialog = false },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Đầu hàng",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
-            onDismiss = { showSurrenderDialog = false }
+            text = {
+                Text(
+                    text = "Bạn có chắc chắn muốn đầu hàng không?",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSurrenderDialog = false
+                        onSurrender()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSurrenderDialog = false }) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 }
@@ -374,13 +425,65 @@ fun PlayWithOpponentScreen(
     viewModel: OnlineChessViewModel = viewModel()
 ) {
     var showGameOverDialog by remember { mutableStateOf(false) }
-    var gameResult by remember { mutableStateOf<String?>(null) }
     var showDrawRequestDialog by remember { mutableStateOf(false) }
+    var playerName by remember { mutableStateOf("Bạn") }
+    var opponentName by remember { mutableStateOf("Đối thủ") }
+    var playerScore by remember { mutableStateOf(0) }
+    var opponentScore by remember { mutableStateOf(0) }
 
     LaunchedEffect(matchId) {
         if (viewModel.matchId.value != matchId) {
             viewModel.matchId.value = matchId
             viewModel.listenToMatchUpdates()
+        }
+    }
+
+    // Đồng bộ playerColor với dữ liệu từ Firestore
+    LaunchedEffect(viewModel.matchId.value) {
+        viewModel.matchId.value?.let { id ->
+            val db = Firebase.firestore
+            db.collection("matches").document(id)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) return@addSnapshotListener
+
+                    val player1Id = snapshot.getString("player1")
+                    val player2Id = snapshot.getString("player2")
+                    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+                    if (player1Id != null && player2Id != null && currentUserId != null) {
+                        // Đồng bộ playerColor
+                        val expectedColor = if (currentUserId == player1Id) PieceColor.WHITE else PieceColor.BLACK
+                        if (viewModel.playerColor.value != expectedColor) {
+                            viewModel.playerColor.value = expectedColor
+                        }
+
+                        db.collection("users").document(player1Id)
+                            .addSnapshotListener { player1Doc, player1Error ->
+                                if (player1Error != null || player1Doc == null) return@addSnapshotListener
+                                val player1Name = player1Doc.getString("name") ?: player1Doc.getString("username") ?: "Người chơi 1"
+                                val player1Score = player1Doc.getLong("score")?.toInt() ?: 0
+
+                                db.collection("users").document(player2Id)
+                                    .addSnapshotListener { player2Doc, player2Error ->
+                                        if (player2Error != null || player2Doc == null) return@addSnapshotListener
+                                        val player2Name = player2Doc.getString("name") ?: player2Doc.getString("username") ?: "Người chơi 2"
+                                        val player2Score = player2Doc.getLong("score")?.toInt() ?: 0
+
+                                        if (currentUserId == player1Id) {
+                                            playerName = player1Name
+                                            playerScore = player1Score
+                                            opponentName = player2Name
+                                            opponentScore = player2Score
+                                        } else {
+                                            playerName = player2Name
+                                            playerScore = player2Score
+                                            opponentName = player1Name
+                                            opponentScore = player1Score
+                                        }
+                                    }
+                            }
+                    }
+                }
         }
     }
 
@@ -399,39 +502,55 @@ fun PlayWithOpponentScreen(
         ) {
             PlayWithOpponentHeader(
                 onBackClick = onBackClick,
-                onExitConfirm = onBackClick,
+                onExitConfirm = {
+                    viewModel.surrender()
+                    onBackClick()
+                },
+                opponentName = opponentName,
+                opponentScore = opponentScore,
                 whiteTime = viewModel.whiteTime.value,
-                blackTime = viewModel.blackTime.value
+                blackTime = viewModel.blackTime.value,
+                playerColor = viewModel.playerColor.value
+            )
+            Text(
+                text = "Bạn là bên ${if (viewModel.playerColor.value == PieceColor.WHITE) "trắng" else "đen"}",
+                fontSize = 16.sp,
+                color = Color.White,
+                modifier = Modifier.padding(8.dp)
             )
             Chessboard(
                 board = viewModel.board.value,
                 highlightedSquares = viewModel.highlightedSquares.value,
                 onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
+                playerColor = viewModel.playerColor.value,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             )
+            Text(
+                text = viewModel.moveHistory.lastOrNull() ?: "Chưa có nước đi",
+                fontSize = 14.sp,
+                color = Color.White,
+                modifier = Modifier.padding(8.dp)
+            )
             PlayWithOpponentFooter(
-                onOfferDraw = {
-                    viewModel.requestDraw()
-                },
+                onOfferDraw = { viewModel.requestDraw() },
                 onSurrender = {
                     viewModel.surrender()
-                    gameResult = if (viewModel.playerColor.value == PieceColor.WHITE) {
-                        "Black wins by surrender!"
-                    } else {
-                        "White wins by surrender!"
-                    }
                     showGameOverDialog = true
                 },
-                whiteTime = viewModel.whiteTime.value
+                playerName = playerName,
+                playerScore = playerScore,
+                whiteTime = viewModel.whiteTime.value,
+                blackTime = viewModel.blackTime.value,
+                playerColor = viewModel.playerColor.value
             )
         }
     }
 
     if (viewModel.isPromoting.value) {
         PromotionDialog(
-            currentTurn = viewModel.currentTurn.value,
+            playerColor = viewModel.playerColor.value ?: PieceColor.WHITE,
             onSelect = { pieceType ->
                 viewModel.promotePawn(pieceType)
             },
@@ -444,30 +563,104 @@ fun PlayWithOpponentScreen(
     }
 
     if (showDrawRequestDialog) {
-        CustomDialog(
-            title = "Đối thủ đã gửi yêu cầu cầu hòa. Bạn có đồng ý không?",
-            onConfirm = {
-                showDrawRequestDialog = false
-                viewModel.acceptDraw()
+        AlertDialog(
+            onDismissRequest = { showDrawRequestDialog = false },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Yêu cầu cầu hòa",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
-            onDismiss = {
-                showDrawRequestDialog = false
-                viewModel.declineDraw()
-            }
+            text = {
+                Text(
+                    text = "Đối thủ đã gửi yêu cầu cầu hòa. Bạn có đồng ý không?",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDrawRequestDialog = false
+                        viewModel.acceptDraw()
+                        showGameOverDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showDrawRequestDialog = false
+                    viewModel.declineDraw()
+                }) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 
     if (viewModel.isGameOver.value || showGameOverDialog) {
-        CustomDialog(
-            title = gameResult ?: viewModel.gameResult.value ?: "Game ended.",
-            onConfirm = {
-                showGameOverDialog = false
-                navController?.popBackStack()
+        AlertDialog(
+            onDismissRequest = {},
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Ván đấu kết thúc",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
-            onDismiss = {
-                showGameOverDialog = false
-                navController?.popBackStack()
-            }
+            text = {
+                Text(
+                    text = viewModel.gameResult.value ?: "Trò chơi kết thúc.",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showGameOverDialog = false
+                        if (navController != null) {
+                            navController.popBackStack()
+                        } else {
+                            onBackClick()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            dismissButton = {},
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 }
