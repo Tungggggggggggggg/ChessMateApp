@@ -35,7 +35,16 @@ fun NavGraph(
             PlayWithOpponentScreen(
                 navController = navController,
                 matchId = matchId
-            ) // Gọi với tham số matchId
+            )
+        }
+        composable(
+            route = "competitor_profile/{opponentId}"
+        ) { backStackEntry ->
+            val opponentId = backStackEntry.arguments?.getString("opponentId") ?: ""
+            CompetitorProfileScreen(
+                navController = navController,
+                opponentId = opponentId
+            )
         }
     }
 }

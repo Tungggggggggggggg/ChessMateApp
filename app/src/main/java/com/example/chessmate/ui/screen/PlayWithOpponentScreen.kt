@@ -1,5 +1,6 @@
 package com.example.chessmate.ui.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +33,8 @@ import com.example.chessmate.viewmodel.OnlineChessViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import androidx.compose.runtime.collectAsState
+import com.example.chessmate.viewmodel.FindFriendsViewModel
 
 @Composable
 fun PlayWithOpponentHeader(
@@ -41,9 +45,13 @@ fun PlayWithOpponentHeader(
     whiteTime: Int,
     blackTime: Int,
     playerColor: PieceColor?,
+    onFriendRequestSent: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showExitDialog by remember { mutableStateOf(false) }
+    var isFriendRequestSent by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Box(
         modifier = modifier
@@ -76,7 +84,9 @@ fun PlayWithOpponentHeader(
             Icon(
                 painter = painterResource(id = R.drawable.profile),
                 contentDescription = "$opponentName",
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier
+                    .size(32.dp)
+                    .clickable { onProfileClick() },
                 tint = Color.Black
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -124,12 +134,21 @@ fun PlayWithOpponentHeader(
                 .padding(top = 24.dp)
                 .width(94.dp)
                 .height(32.dp)
-                .background(colorResource(id = R.color.color_eed7c5), shape = RoundedCornerShape(20.dp))
-                .clickable { /* TODO: Xử lý kết bạn */ },
+                .background(
+                    colorResource(id = if (isFriendRequestSent) R.color.color_b36a5e else R.color.color_eed7c5),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .clickable(enabled = !isFriendRequestSent) {
+                    if (!isFriendRequestSent) {
+                        onFriendRequestSent()
+                        isFriendRequestSent = true
+                        Toast.makeText(context, "Đã gửi lời mời kết bạn!", Toast.LENGTH_SHORT).show()
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "+ Kết bạn",
+                text = if (isFriendRequestSent) "Đã gửi" else "+ Kết bạn",
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -422,7 +441,8 @@ fun PlayWithOpponentScreen(
     navController: NavController? = null,
     matchId: String = "",
     onBackClick: () -> Unit = { navController?.popBackStack() },
-    viewModel: OnlineChessViewModel = viewModel()
+    viewModel: OnlineChessViewModel = viewModel(),
+    friendViewModel: FindFriendsViewModel = viewModel()
 ) {
     var showGameOverDialog by remember { mutableStateOf(false) }
     var showDrawRequestDialog by remember { mutableStateOf(false) }
@@ -430,6 +450,10 @@ fun PlayWithOpponentScreen(
     var opponentName by remember { mutableStateOf("Đối thủ") }
     var playerScore by remember { mutableStateOf(0) }
     var opponentScore by remember { mutableStateOf(0) }
+    var opponentId by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val sentRequests by friendViewModel.sentRequests.collectAsState()
+    val friends by friendViewModel.friends.collectAsState()
 
     LaunchedEffect(matchId) {
         if (viewModel.matchId.value != matchId) {
@@ -438,7 +462,6 @@ fun PlayWithOpponentScreen(
         }
     }
 
-    // Đồng bộ playerColor với dữ liệu từ Firestore
     LaunchedEffect(viewModel.matchId.value) {
         viewModel.matchId.value?.let { id ->
             val db = Firebase.firestore
@@ -451,11 +474,13 @@ fun PlayWithOpponentScreen(
                     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
                     if (player1Id != null && player2Id != null && currentUserId != null) {
-                        // Đồng bộ playerColor
                         val expectedColor = if (currentUserId == player1Id) PieceColor.WHITE else PieceColor.BLACK
                         if (viewModel.playerColor.value != expectedColor) {
                             viewModel.playerColor.value = expectedColor
                         }
+
+                        // Lấy opponentId
+                        opponentId = if (currentUserId == player1Id) player2Id else player1Id
 
                         db.collection("users").document(player1Id)
                             .addSnapshotListener { player1Doc, player1Error ->
@@ -510,7 +535,21 @@ fun PlayWithOpponentScreen(
                 opponentScore = opponentScore,
                 whiteTime = viewModel.whiteTime.value,
                 blackTime = viewModel.blackTime.value,
-                playerColor = viewModel.playerColor.value
+                playerColor = viewModel.playerColor.value,
+                onFriendRequestSent = {
+                    opponentId?.let { id ->
+                        if (id !in sentRequests && friends.none { it.userId == id }) {
+                            friendViewModel.sendFriendRequest(id)
+                        } else {
+                            Toast.makeText(context, "Lời mời đã được gửi hoặc đã là bạn bè!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                onProfileClick = {
+                    opponentId?.let { id ->
+                        navController?.navigate("competitor_profile/$id")
+                    }
+                }
             )
             Text(
                 text = "Bạn là bên ${if (viewModel.playerColor.value == PieceColor.WHITE) "trắng" else "đen"}",

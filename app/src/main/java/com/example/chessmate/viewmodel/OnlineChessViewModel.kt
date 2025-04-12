@@ -376,8 +376,8 @@ class OnlineChessViewModel : ViewModel() {
                             status == MatchStatus.Draw -> {
                                 chessGame.getGameResult() ?: "Hết cờ! Ván đấu hòa."
                             }
-                            status == MatchStatus.Surrendered -> if (winner == auth.currentUser?.uid) "Bạn thắng!" else "Bạn thua!"
-                            status == MatchStatus.Checkmate || chessGame.isCheckmatePublic() -> if (winner == auth.currentUser?.uid) "Bạn thắng!" else "Bạn thua!"
+                            status == MatchStatus.Surrendered -> if (winner == auth.currentUser?.uid) "Bạn thắng! Vì đối thủ đầu hàng" else "Bạn thua! Vì đã đầu hàng"
+                            status == MatchStatus.Checkmate || chessGame.isCheckmatePublic() -> if (winner == auth.currentUser?.uid) "Bạn thắng! Vì đã chiếu hết đối thủ" else "Bạn thua! Vì đã bị đối thủ chiếu hết"
                             else -> chessGame.getGameResult() ?: "Trò chơi kết thúc."
                         }
                         timerJob?.cancel()

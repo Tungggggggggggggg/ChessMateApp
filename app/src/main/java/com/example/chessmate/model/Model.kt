@@ -1,6 +1,5 @@
 package com.example.chessmate.model
 
-
 data class FriendRequest(
     val fromUserId: String,
     val fromName: String,
