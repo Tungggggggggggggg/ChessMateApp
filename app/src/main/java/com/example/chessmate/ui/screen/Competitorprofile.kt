@@ -118,13 +118,13 @@ fun CompetitorProfileContent(
                         else -> onAddFriendClick()
                     }
                 },
-                enabled = true, // Luôn cho phép nhấn để xử lý các hành động
+                enabled = true,
                 modifier = Modifier.height(50.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = when {
-                        isFriend -> Color.Red // Màu đỏ cho "Xóa bạn"
-                        isFriendRequestSent -> colorResource(id = R.color.color_b36a5e) // Màu đỏ nâu cho "Xóa lời mời"
-                        else -> colorResource(id = R.color.color_c89f9c) // Màu mặc định cho "Kết bạn"
+                        isFriend -> Color.Red
+                        isFriendRequestSent -> colorResource(id = R.color.color_b36a5e)
+                        else -> colorResource(id = R.color.color_c89f9c)
                     },
                     contentColor = Color.White
                 ),
@@ -152,7 +152,7 @@ fun CompetitorProfileContent(
                 .border(1.dp, Color.Black)
                 .background(colorResource(id = R.color.color_eee2df))
                 .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp) // Đồng bộ với Profile.kt
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ProfileInfoRow(label = "Tên:", value = userData?.get("name")?.toString() ?: "")
             HorizontalDivider(color = Color.Black, thickness = 1.dp)
@@ -172,7 +172,11 @@ fun CompetitorProfileScreen(
     navController: NavController? = null,
     opponentId: String = "",
     onBackClick: () -> Unit = { navController?.popBackStack() },
-    onMatchHistoryClick: () -> Unit = { navController?.navigate("match_history") },
+    onMatchHistoryClick: () -> Unit = {
+        if (opponentId.isNotEmpty()) {
+            navController?.navigate("match_history/$opponentId")
+        }
+    },
     friendViewModel: FindFriendsViewModel = viewModel()
 ) {
     val context = LocalContext.current

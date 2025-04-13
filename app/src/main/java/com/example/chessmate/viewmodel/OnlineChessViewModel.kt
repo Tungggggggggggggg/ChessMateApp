@@ -20,6 +20,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 class OnlineChessViewModel : ViewModel() {
@@ -365,7 +368,6 @@ class OnlineChessViewModel : ViewModel() {
                         chessGame.setLastMove(from, to)
                     }
 
-                    // Kiểm tra trạng thái trò chơi sau khi đồng bộ dữ liệu từ Firestore
                     chessGame.updateGameState()
                     isGameOver.value = chessGame.isGameOver() || status != MatchStatus.Ongoing
                     gameResult.value = chessGame.getGameResult()
@@ -648,13 +650,66 @@ class OnlineChessViewModel : ViewModel() {
                         transaction.update(player2Ref, mapOf("score" to player2Score + 10))
                         transaction.update(player1Ref, mapOf("score" to (player1Score - 5).coerceAtLeast(0)))
                     }
-                    else -> {
-                        // Trường hợp hòa, không thay đổi điểm số
-                    }
+                    else -> {}
                 }
             }.await()
         } catch (e: Exception) {
             matchmakingError.value = "Lỗi cập nhật điểm: ${e.message}"
+        }
+    }
+
+    private suspend fun saveMatchHistory(player1Id: String, player2Id: String, status: MatchStatus, winner: String?) {
+        try {
+            // Lấy thông tin người chơi
+            val player1Doc = db.collection("users").document(player1Id).get().await()
+            val player2Doc = db.collection("users").document(player2Id).get().await()
+
+            val player1Name = player1Doc.getString("name") ?: player1Doc.getString("username") ?: "Người chơi 1"
+            val player2Name = player2Doc.getString("name") ?: player2Doc.getString("username") ?: "Người chơi 2"
+
+            // Tính toán kết quả cho từng người chơi
+            val player1Result = when {
+                status == MatchStatus.Draw -> "Hòa"
+                winner == player1Id -> "Thắng"
+                winner == player2Id -> "Thua"
+                else -> "Hòa"
+            }
+            val player2Result = when {
+                status == MatchStatus.Draw -> "Hòa"
+                winner == player1Id -> "Thua"
+                winner == player2Id -> "Thắng"
+                else -> "Hòa"
+            }
+
+            // Định dạng ngày giờ
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            val currentDate = dateFormat.format(Date())
+
+            // Lưu lịch sử cho player1
+            val player1MatchData = mapOf(
+                "result" to player1Result,
+                "date" to currentDate,
+                "moves" to moveHistory.size,
+                "opponent" to player2Name
+            )
+            db.collection("users").document(player1Id)
+                .collection("match_history")
+                .add(player1MatchData)
+                .await()
+
+            // Lưu lịch sử cho player2
+            val player2MatchData = mapOf(
+                "result" to player2Result,
+                "date" to currentDate,
+                "moves" to moveHistory.size,
+                "opponent" to player1Name
+            )
+            db.collection("users").document(player2Id)
+                .collection("match_history")
+                .add(player2MatchData)
+                .await()
+        } catch (e: Exception) {
+            matchmakingError.value = "Lỗi lưu lịch sử trận đấu: ${e.message}"
         }
     }
 
@@ -677,9 +732,12 @@ class OnlineChessViewModel : ViewModel() {
                 val player2Id = matchData.value?.get("player2") as? String
                 if (player1Id != null && player2Id != null) {
                     when (status) {
-                        MatchStatus.Draw -> {}
+                        MatchStatus.Draw -> {
+                            saveMatchHistory(player1Id, player2Id, status, winner)
+                        }
                         MatchStatus.Surrendered, MatchStatus.Checkmate -> {
                             updateScores(player1Id, player2Id, winner)
+                            saveMatchHistory(player1Id, player2Id, status, winner)
                         }
                         MatchStatus.Ongoing -> {}
                     }
