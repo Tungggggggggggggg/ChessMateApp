@@ -27,24 +27,34 @@ class FindFriendsViewModel : ViewModel() {
 
     fun searchUsers(query: String) {
         if (query.isBlank()) {
+            println("Search query is blank, returning empty results")
             _searchResults.value = emptyList()
             return
         }
-        val queryLowercase = query.lowercase()
+        val queryLowercase = query.lowercase().trim()
+        println("Searching for query: '$queryLowercase'")
+
         firestore.collection("users")
-            .whereGreaterThanOrEqualTo("nameLowercase", queryLowercase)
-            .whereLessThanOrEqualTo("nameLowercase", queryLowercase + "\uf8ff")
+            .whereArrayContains("nameKeywords", queryLowercase)
             .get()
             .addOnSuccessListener { result ->
+                println("Firestore query returned ${result.documents.size} documents")
                 val users = result.documents.mapNotNull { doc ->
                     val name = doc.getString("name") ?: return@mapNotNull null
                     val email = doc.getString("email") ?: return@mapNotNull null
                     val userId = doc.getString("userId") ?: doc.id
+                    val nameKeywords = doc.get("nameKeywords") as? List<String> ?: emptyList()
                     val currentUid = auth.currentUser?.uid
                     if (userId == currentUid) return@mapNotNull null
+                    println("Found user: $userId, name: $name, nameKeywords: $nameKeywords")
                     User(userId, name, email)
                 }
+                println("Search results: ${users.size} users found")
                 _searchResults.value = users
+            }
+            .addOnFailureListener { exception ->
+                println("Search failed: ${exception.message}")
+                _searchResults.value = emptyList()
             }
     }
 

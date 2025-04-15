@@ -218,7 +218,7 @@ fun FindFriendsScreen(
                 .padding(16.dp)
         ) {
             BackButton(onBackClick = {
-                navController.navigate("main") {
+                navController.navigate("main_screen") {
                     popUpTo(navController.graph.startDestinationId) { inclusive = false }
                     launchSingleTop = true
                 }
