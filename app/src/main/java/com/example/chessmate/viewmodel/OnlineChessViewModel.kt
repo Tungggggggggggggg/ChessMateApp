@@ -1,7 +1,7 @@
 package com.example.chessmate.viewmodel
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chessmate.model.ChessGame
@@ -10,6 +10,7 @@ import com.example.chessmate.model.Move
 import com.example.chessmate.model.PieceColor
 import com.example.chessmate.model.PieceType
 import com.example.chessmate.model.Position
+import com.example.chessmate.model.ChatMessage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -43,15 +44,19 @@ class OnlineChessViewModel : ViewModel() {
     val playerColor = mutableStateOf<PieceColor?>(null)
     val drawRequest = mutableStateOf<String?>(null)
     val moveHistory = mutableStateListOf<String>()
+    val chatMessages = mutableStateListOf<ChatMessage>()
+    val hasUnreadMessages = mutableStateOf(false)
     private val matchData = mutableStateOf<Map<String, Any>?>(null)
     val matchmakingError = mutableStateOf<String?>(null)
 
     private var timerJob: Job? = null
     private var matchListener: ListenerRegistration? = null
+    private var chatListener: ListenerRegistration? = null
     private var matchmakingListener: ListenerRegistration? = null
     private var matchmakingJob: Job? = null
     private val isMatchmaking = AtomicBoolean(false)
     private var lastMoveByThisDevice = false
+    private var messageSequence = 0L
 
     sealed class MatchStatus {
         object Ongoing : MatchStatus()
@@ -149,7 +154,6 @@ class OnlineChessViewModel : ViewModel() {
                             }
                             if (playerColor.value == null) {
                                 playerColor.value = if (currentUserId == player1Id) PieceColor.WHITE else PieceColor.BLACK
-                                println("listenForMatchmaking: playerColor set to ${playerColor.value} for user $currentUserId (player1: $player1Id, player2: $player2Id)")
                             }
                             listenToMatchUpdates()
                             startTimer()
@@ -238,7 +242,6 @@ class OnlineChessViewModel : ViewModel() {
                 this.matchId.value = matchId
                 if (playerColor.value == null) {
                     playerColor.value = PieceColor.WHITE
-                    println("tryMatchWithOpponent: playerColor set to ${playerColor.value} for user $userId")
                 }
                 listenToMatchUpdates()
                 startTimer()
@@ -384,6 +387,8 @@ class OnlineChessViewModel : ViewModel() {
                         }
                         timerJob?.cancel()
                     }
+
+                    listenToChatMessages()
                 }
         }
     }
@@ -446,9 +451,104 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    fun listenToChatMessages() {
+        matchId.value?.let { id ->
+            chatListener?.remove()
+            chatListener = db.collection("matches")
+                .document(id)
+                .collection("chat_messages")
+                .orderBy("timestamp")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null || snapshot == null) {
+                        matchmakingError.value = "Lỗi tải tin nhắn: ${error?.message}"
+                        return@addSnapshotListener
+                    }
+                    val messages = mutableListOf<Pair<String, ChatMessage>>()
+                    snapshot.documents.forEach { doc ->
+                        val senderId = doc.getString("senderId") ?: return@forEach
+                        val message = doc.getString("message") ?: return@forEach
+                        val timestamp = doc.getLong("timestamp") ?: return@forEach
+                        val sequence = doc.getLong("sequence") ?: 0
+                        val readBy = doc.get("readBy") as? List<String> ?: emptyList()
+                        messages.add(doc.id to ChatMessage(senderId, message, timestamp, sequence, readBy))
+                    }
+                    // Sắp xếp theo timestamp, sau đó theo sequence để đảm bảo thứ tự
+                    messages.sortWith(compareBy({ it.second.timestamp }, { it.second.sequence }))
+                    chatMessages.clear()
+                    chatMessages.addAll(messages.map { it.second })
+
+                    // Kiểm tra tin nhắn chưa đọc
+                    val currentUserId = auth.currentUser?.uid
+                    if (currentUserId != null) {
+                        hasUnreadMessages.value = chatMessages.any { message ->
+                            message.senderId != currentUserId && !message.readBy.contains(currentUserId)
+                        }
+                    }
+                }
+        }
+    }
+
+    fun sendMessage(message: String) {
+        val userId = auth.currentUser?.uid ?: return
+        if (message.trim().isEmpty() || message.length > 200) return
+        matchId.value?.let { id ->
+            val chatData = hashMapOf(
+                "senderId" to userId,
+                "message" to message.trim(),
+                "timestamp" to System.currentTimeMillis(),
+                "sequence" to messageSequence++,
+                "readBy" to listOf(userId)
+            )
+            db.collection("matches")
+                .document(id)
+                .collection("chat_messages")
+                .add(chatData)
+                .addOnFailureListener { e ->
+                    matchmakingError.value = "Lỗi gửi tin nhắn: ${e.message}"
+                }
+        }
+    }
+
+    fun markMessagesAsRead() {
+        val currentUserId = auth.currentUser?.uid ?: return
+        matchId.value?.let { id ->
+            viewModelScope.launch {
+                try {
+                    // Lấy tất cả tin nhắn không phải do người dùng hiện tại gửi
+                    val snapshot = db.collection("matches")
+                        .document(id)
+                        .collection("chat_messages")
+                        .whereNotEqualTo("senderId", currentUserId)
+                        .get()
+                        .await()
+
+                    // Lọc các tin nhắn chưa có currentUserId trong readBy
+                    val unreadMessages = snapshot.documents.filter { doc ->
+                        val readBy = doc.get("readBy") as? List<String> ?: emptyList()
+                        !readBy.contains(currentUserId)
+                    }
+
+                    // Cập nhật readBy trong một giao dịch
+                    if (unreadMessages.isNotEmpty()) {
+                        db.runTransaction { transaction ->
+                            for (doc in unreadMessages) {
+                                val ref = db.collection("matches")
+                                    .document(id)
+                                    .collection("chat_messages")
+                                    .document(doc.id)
+                                transaction.update(ref, "readBy", FieldValue.arrayUnion(currentUserId))
+                            }
+                        }.await()
+                    }
+                } catch (e: Exception) {
+                    matchmakingError.value = "Lỗi đánh dấu tin nhắn đã đọc: ${e.message}"
+                }
+            }
+        }
+    }
+
     fun onSquareClicked(row: Int, col: Int) {
         if (isPromoting.value || playerColor.value != currentTurn.value || matchId.value == null) {
-            println("onSquareClicked: Cannot move. isPromoting=${isPromoting.value}, playerColor=${playerColor.value}, currentTurn=${currentTurn.value}, matchId=${matchId.value}")
             return
         }
 
@@ -528,10 +628,8 @@ class OnlineChessViewModel : ViewModel() {
             val piece = chessGame.getPieceAt(row, col)
             if (piece != null && piece.color == playerColor.value) {
                 val moves = chessGame.selectPiece(row, col)
-                println("onSquareClicked: Selected piece at ($row, $col), color=${piece.color}, playerColor=${playerColor.value}, chessGame.currentTurn=${chessGame.getCurrentTurn()}, moves=$moves")
                 highlightedSquares.value = moves
             } else {
-                println("onSquareClicked: No piece at ($row, $col) or wrong color. Piece=$piece, playerColor=${playerColor.value}, chessGame.currentTurn=${chessGame.getCurrentTurn()}")
                 highlightedSquares.value = emptyList()
             }
         }
@@ -660,14 +758,12 @@ class OnlineChessViewModel : ViewModel() {
 
     private suspend fun saveMatchHistory(player1Id: String, player2Id: String, status: MatchStatus, winner: String?) {
         try {
-            // Lấy thông tin người chơi
             val player1Doc = db.collection("users").document(player1Id).get().await()
             val player2Doc = db.collection("users").document(player2Id).get().await()
 
             val player1Name = player1Doc.getString("name") ?: player1Doc.getString("username") ?: "Người chơi 1"
             val player2Name = player2Doc.getString("name") ?: player2Doc.getString("username") ?: "Người chơi 2"
 
-            // Tính toán kết quả cho từng người chơi
             val player1Result = when {
                 status == MatchStatus.Draw -> "Hòa"
                 winner == player1Id -> "Thắng"
@@ -681,11 +777,9 @@ class OnlineChessViewModel : ViewModel() {
                 else -> "Hòa"
             }
 
-            // Định dạng ngày giờ
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
             val currentDate = dateFormat.format(Date())
 
-            // Lưu lịch sử cho player1
             val player1MatchData = mapOf(
                 "result" to player1Result,
                 "date" to currentDate,
@@ -697,7 +791,6 @@ class OnlineChessViewModel : ViewModel() {
                 .add(player1MatchData)
                 .await()
 
-            // Lưu lịch sử cho player2
             val player2MatchData = mapOf(
                 "result" to player2Result,
                 "date" to currentDate,
@@ -836,6 +929,7 @@ class OnlineChessViewModel : ViewModel() {
         super.onCleared()
         timerJob?.cancel()
         matchListener?.remove()
+        chatListener?.remove()
         matchmakingListener?.remove()
         cancelMatchmaking()
     }

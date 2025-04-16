@@ -4,11 +4,15 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,14 +31,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.model.PieceColor
+import com.example.chessmate.model.ChatMessage
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
+import com.example.chessmate.viewmodel.FindFriendsViewModel
 import com.example.chessmate.viewmodel.OnlineChessViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import androidx.compose.runtime.collectAsState
-import com.example.chessmate.viewmodel.FindFriendsViewModel
 
 @Composable
 fun PlayWithOpponentHeader(
@@ -215,6 +219,7 @@ fun PlayWithOpponentFooter(
     whiteTime: Int,
     blackTime: Int,
     playerColor: PieceColor?,
+    hasUnreadMessages: Boolean,
     onChatClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -310,6 +315,15 @@ fun PlayWithOpponentFooter(
                 modifier = Modifier.size(24.dp),
                 tint = Color.Black
             )
+            if (hasUnreadMessages) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-2).dp, y = 2.dp)
+                        .background(Color.Red, shape = CircleShape)
+                )
+            }
         }
         Box(
             modifier = Modifier
@@ -437,6 +451,127 @@ fun formatTime(seconds: Int): String {
 }
 
 @Composable
+fun ChatDialog(
+    messages: List<ChatMessage>,
+    currentUserId: String?,
+    playerName: String,
+    opponentName: String,
+    onSendMessage: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var messageInput by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+
+    // Tự động cuộn đến tin nhắn mới nhất khi danh sách thay đổi
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier
+            .background(colorResource(id = R.color.color_c97c5d))
+            .height(400.dp),
+        title = {
+            Text(
+                text = "Chat",
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    state = listState,
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    itemsIndexed(messages) { _, message ->
+                        val isCurrentUser = message.senderId == currentUserId
+                        val senderName = if (isCurrentUser) playerName else opponentName
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        colorResource(
+                                            id = if (isCurrentUser) R.color.color_eed7c5 else R.color.color_c89f9c
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(8.dp)
+                            ) {
+                                Text(
+                                    text = "$senderName: ${message.message}",
+                                    color = Color.Black,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextField(
+                        value = messageInput,
+                        onValueChange = { messageInput = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(Color.White, RoundedCornerShape(8.dp)),
+                        colors = TextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White
+                        ),
+                        placeholder = { Text("Nhập tin nhắn...") }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            if (messageInput.isNotBlank()) {
+                                onSendMessage(messageInput)
+                                messageInput = ""
+                            }
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.send),
+                            contentDescription = "Gửi",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng", color = Color.White)
+            }
+        },
+        containerColor = colorResource(id = R.color.color_c97c5d)
+    )
+}
+
+@Composable
 fun PlayWithOpponentScreen(
     navController: NavController? = null,
     matchId: String = "",
@@ -446,6 +581,7 @@ fun PlayWithOpponentScreen(
 ) {
     var showGameOverDialog by remember { mutableStateOf(false) }
     var showDrawRequestDialog by remember { mutableStateOf(false) }
+    var showChatDialog by remember { mutableStateOf(false) }
     var playerName by remember { mutableStateOf("Bạn") }
     var opponentName by remember { mutableStateOf("Đối thủ") }
     var playerScore by remember { mutableStateOf(0) }
@@ -454,6 +590,14 @@ fun PlayWithOpponentScreen(
     val context = LocalContext.current
     val sentRequests by friendViewModel.sentRequests.collectAsState()
     val friends by friendViewModel.friends.collectAsState()
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    // Đánh dấu tin nhắn đã đọc khi mở dialog
+    LaunchedEffect(showChatDialog) {
+        if (showChatDialog) {
+            viewModel.markMessagesAsRead()
+        }
+    }
 
     LaunchedEffect(matchId) {
         if (viewModel.matchId.value != matchId) {
@@ -479,7 +623,6 @@ fun PlayWithOpponentScreen(
                             viewModel.playerColor.value = expectedColor
                         }
 
-                        // Lấy opponentId
                         opponentId = if (currentUserId == player1Id) player2Id else player1Id
 
                         db.collection("users").document(player1Id)
@@ -582,7 +725,9 @@ fun PlayWithOpponentScreen(
                 playerScore = playerScore,
                 whiteTime = viewModel.whiteTime.value,
                 blackTime = viewModel.blackTime.value,
-                playerColor = viewModel.playerColor.value
+                playerColor = viewModel.playerColor.value,
+                hasUnreadMessages = viewModel.hasUnreadMessages.value,
+                onChatClick = { showChatDialog = true }
             )
         }
     }
@@ -700,6 +845,17 @@ fun PlayWithOpponentScreen(
             },
             dismissButton = {},
             containerColor = colorResource(id = R.color.color_c97c5d)
+        )
+    }
+
+    if (showChatDialog) {
+        ChatDialog(
+            messages = viewModel.chatMessages,
+            currentUserId = currentUserId,
+            playerName = playerName,
+            opponentName = opponentName,
+            onSendMessage = { message -> viewModel.sendMessage(message) },
+            onDismiss = { showChatDialog = false }
         )
     }
 }
