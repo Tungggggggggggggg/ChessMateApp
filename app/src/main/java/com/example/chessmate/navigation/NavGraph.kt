@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.example.chessmate.ui.screen.*
+import java.net.URLDecoder
 
 @Composable
 fun NavGraph(
@@ -34,6 +35,23 @@ fun NavGraph(
             )
         }
         composable("chat") { ChatScreen(navController) }
+        composable(
+            route = "chat_detail/{friendId}/{friendName}",
+            arguments = listOf(
+                navArgument("friendId") { type = NavType.StringType },
+                navArgument("friendName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val friendId = backStackEntry.arguments?.getString("friendId") ?: ""
+            val friendName = backStackEntry.arguments?.getString("friendName")?.let {
+                URLDecoder.decode(it, "UTF-8")
+            } ?: ""
+            ChatDetailScreen(
+                navController = navController,
+                friendId = friendId,
+                friendName = friendName
+            )
+        }
         composable("play_with_ai") { PlayWithAIScreen(navController) }
         composable("play_with_friend") { PlayWithFriendScreen(navController) }
         composable(
@@ -49,7 +67,8 @@ fun NavGraph(
             )
         }
         composable(
-            route = "competitor_profile/{opponentId}"
+            route = "competitor_profile/{opponentId}",
+            arguments = listOf(navArgument("opponentId") { type = NavType.StringType })
         ) { backStackEntry ->
             val opponentId = backStackEntry.arguments?.getString("opponentId") ?: ""
             CompetitorProfileScreen(
