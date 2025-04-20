@@ -106,10 +106,18 @@ class ChatViewModel : ViewModel() {
                                                 friendList.removeAll { it.friend.userId == friendId }
                                                 friendList.add(FriendWithLastMessage(friend, lastMessage, hasUnread))
                                                 _friendsWithMessages.value = friendList.sortedBy { it.lastMessage?.timestamp ?: 0L }.reversed()
+
+                                                // Cập nhật hasUnreadMessages dựa trên tất cả bạn bè
+                                                _hasUnreadMessages.value = friendList.any { it.hasUnread }
                                                 Log.d("ChatViewModel", "Loaded friend: ID=$friendId, Name=$name, LastMessage=${lastMessage?.message}, Unread=$hasUnread")
                                             }
                                     }
                             }
+                        }
+
+                        // Cập nhật hasUnreadMessages khi không có bạn bè
+                        if (allDocs.isEmpty()) {
+                            _hasUnreadMessages.value = false
                         }
                     }
             }
@@ -148,9 +156,8 @@ class ChatViewModel : ViewModel() {
                 messages.sortWith(compareBy({ it.timestamp }, { it.sequence }))
                 _messages.value = messages
 
-                _hasUnreadMessages.value = messages.any { message ->
-                    message.senderId != currentUserId && !message.readBy.contains(currentUserId)
-                }
+                // Cập nhật hasUnreadMessages dựa trên tất cả bạn bè để đảm bảo tính nhất quán
+                loadFriendsWithMessages() // Gọi lại để cập nhật trạng thái unread của tất cả bạn bè
                 Log.d("ChatViewModel", "Messages loaded: ${messages.size}")
             }
     }
@@ -199,6 +206,8 @@ class ChatViewModel : ViewModel() {
                 batch.commit()
                     .addOnSuccessListener {
                         Log.d("ChatViewModel", "Marked messages as read for conversation: $conversationId")
+                        // Cập nhật lại danh sách bạn bè để phản ánh trạng thái unread mới
+                        loadFriendsWithMessages()
                     }
                     .addOnFailureListener { e ->
                         Log.e("ChatViewModel", "Error marking messages as read: ${e.message}")

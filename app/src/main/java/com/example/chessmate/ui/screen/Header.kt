@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,11 @@ fun Header(
     }
 ) {
     val hasUnreadMessages = viewModel.hasUnreadMessages.collectAsState()
+
+    // Gọi loadFriendsWithMessages ngay khi Header được vẽ
+    LaunchedEffect(Unit) {
+        viewModel.loadFriendsWithMessages()
+    }
 
     Row(
         modifier = modifier

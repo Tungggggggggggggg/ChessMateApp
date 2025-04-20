@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +64,7 @@ fun CompetitorProfileHeader(
         Spacer(modifier = Modifier.width(44.dp))
     }
 }
+
 
 
 @Composable
@@ -216,30 +218,52 @@ fun CompetitorProfileScreen(
     if (showRemoveFriendDialog) {
         AlertDialog(
             onDismissRequest = { showRemoveFriendDialog = false },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
             title = {
-                Text(text = "Xác nhận xóa bạn bè")
+                Text(
+                    text = "Xác nhận xóa bạn bè",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
             text = {
-                Text(text = "Bạn có chắc chắn muốn xóa ${userData?.get("name")?.toString() ?: "người này"} khỏi danh sách bạn bè không?")
+                Text(
+                    text = "Bạn có chắc chắn muốn xóa ${userData?.get("name")?.toString() ?: "người này"} khỏi danh sách bạn bè không?",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         friendViewModel.removeFriend(opponentId)
                         Toast.makeText(context, "Đã xóa bạn bè!", Toast.LENGTH_SHORT).show()
                         showRemoveFriendDialog = false
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
                 ) {
-                    Text("Xác nhận")
+                    Text(
+                        text = "Xác nhận",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showRemoveFriendDialog = false }
                 ) {
-                    Text("Hủy")
+                    Text("Hủy", color = Color.White)
                 }
-            }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
         )
     }
 
