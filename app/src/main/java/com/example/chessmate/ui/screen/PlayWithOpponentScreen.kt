@@ -1,3 +1,4 @@
+
 package com.example.chessmate.ui.screen
 
 import android.widget.Toast
@@ -10,13 +11,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +29,7 @@ import com.example.chessmate.model.PieceColor
 import com.example.chessmate.model.ChatMessage
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
+import com.example.chessmate.viewmodel.ChatViewModel
 import com.example.chessmate.viewmodel.FindFriendsViewModel
 import com.example.chessmate.viewmodel.OnlineChessViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -49,13 +45,17 @@ fun PlayWithOpponentHeader(
     whiteTime: Int,
     blackTime: Int,
     playerColor: PieceColor?,
-    onFriendRequestSent: () -> Unit = {},
+    opponentId: String?,
+    friendViewModel: FindFriendsViewModel,
     onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showExitDialog by remember { mutableStateOf(false) }
-    var isFriendRequestSent by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val sentRequests by friendViewModel.sentRequests.collectAsState()
+    val friends by friendViewModel.friends.collectAsState()
+    val isFriendRequestSent = opponentId?.let { it in sentRequests } ?: false
+    val isFriend = opponentId?.let { id -> friends.any { it.userId == id } } ?: false
 
     Box(
         modifier = modifier
@@ -139,20 +139,30 @@ fun PlayWithOpponentHeader(
                 .width(94.dp)
                 .height(32.dp)
                 .background(
-                    colorResource(id = if (isFriendRequestSent) R.color.color_b36a5e else R.color.color_eed7c5),
+                    colorResource(id = if (isFriendRequestSent || isFriend) R.color.color_b36a5e else R.color.color_eed7c5),
                     shape = RoundedCornerShape(20.dp)
                 )
-                .clickable(enabled = !isFriendRequestSent) {
-                    if (!isFriendRequestSent) {
-                        onFriendRequestSent()
-                        isFriendRequestSent = true
-                        Toast.makeText(context, "Đã gửi lời mời kết bạn!", Toast.LENGTH_SHORT).show()
+                .clickable(enabled = !isFriend) {
+                    opponentId?.let { id ->
+                        if (!isFriend) {
+                            if (isFriendRequestSent) {
+                                friendViewModel.cancelFriendRequest(id)
+                                Toast.makeText(context, "Đã hủy lời mời kết bạn!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                friendViewModel.sendFriendRequest(id)
+                                Toast.makeText(context, "Đã gửi lời mời kết bạn!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 },
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (isFriendRequestSent) "Đã gửi" else "+ Kết bạn",
+                text = when {
+                    isFriend -> "Bạn bè"
+                    isFriendRequestSent -> "Xóa lời mời"
+                    else -> "Gửi lời mời"
+                },
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -456,7 +466,8 @@ fun ChatDialog(
     currentUserId: String?,
     playerName: String,
     opponentName: String,
-    onSendMessage: (String) -> Unit,
+    opponentId: String?,
+    onSendMessage: (String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var messageInput by remember { mutableStateOf("") }
@@ -498,7 +509,6 @@ fun ChatDialog(
                 ) {
                     itemsIndexed(messages) { _, message ->
                         val isCurrentUser = message.senderId == currentUserId
-                        val senderName = if (isCurrentUser) playerName else opponentName
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -516,7 +526,7 @@ fun ChatDialog(
                                     .padding(8.dp)
                             ) {
                                 Text(
-                                    text = "$senderName: ${message.message}",
+                                    text = message.message, // Chỉ hiển thị nội dung tin nhắn
                                     color = Color.Black,
                                     fontSize = 14.sp
                                 )
@@ -547,8 +557,8 @@ fun ChatDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = {
-                            if (messageInput.isNotBlank()) {
-                                onSendMessage(messageInput)
+                            if (messageInput.isNotBlank() && opponentId != null) {
+                                onSendMessage(opponentId, messageInput)
                                 messageInput = ""
                             }
                         }
@@ -576,8 +586,9 @@ fun PlayWithOpponentScreen(
     navController: NavController? = null,
     matchId: String = "",
     onBackClick: () -> Unit = { navController?.popBackStack() },
-    viewModel: OnlineChessViewModel = viewModel(),
-    friendViewModel: FindFriendsViewModel = viewModel()
+    chessViewModel: OnlineChessViewModel = viewModel(),
+    friendViewModel: FindFriendsViewModel = viewModel(),
+    chatViewModel: ChatViewModel = viewModel()
 ) {
     var showGameOverDialog by remember { mutableStateOf(false) }
     var showDrawRequestDialog by remember { mutableStateOf(false) }
@@ -588,26 +599,41 @@ fun PlayWithOpponentScreen(
     var opponentScore by remember { mutableStateOf(0) }
     var opponentId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
-    val sentRequests by friendViewModel.sentRequests.collectAsState()
-    val friends by friendViewModel.friends.collectAsState()
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+    val messages by chatViewModel.messages.collectAsState()
+    val hasUnreadMessages by chatViewModel.hasUnreadMessages.collectAsState()
+
+    // Lắng nghe tin nhắn khi có opponentId
+    LaunchedEffect(opponentId) {
+        opponentId?.let { id ->
+            chatViewModel.listenToChatMessages(id)
+        }
+    }
 
     // Đánh dấu tin nhắn đã đọc khi mở dialog
-    LaunchedEffect(showChatDialog) {
+    LaunchedEffect(showChatDialog, opponentId) {
         if (showChatDialog) {
-            viewModel.markMessagesAsRead()
+            opponentId?.let { id ->
+                chatViewModel.markMessagesAsRead(id)
+            }
         }
+    }
+
+    // Tải trạng thái bạn bè và lời mời khi màn hình được tạo
+    LaunchedEffect(Unit) {
+        friendViewModel.loadSentRequests()
+        friendViewModel.loadFriends()
     }
 
     LaunchedEffect(matchId) {
-        if (viewModel.matchId.value != matchId) {
-            viewModel.matchId.value = matchId
-            viewModel.listenToMatchUpdates()
+        if (chessViewModel.matchId.value != matchId) {
+            chessViewModel.matchId.value = matchId
+            chessViewModel.listenToMatchUpdates()
         }
     }
 
-    LaunchedEffect(viewModel.matchId.value) {
-        viewModel.matchId.value?.let { id ->
+    LaunchedEffect(chessViewModel.matchId.value) {
+        chessViewModel.matchId.value?.let { id ->
             val db = Firebase.firestore
             db.collection("matches").document(id)
                 .addSnapshotListener { snapshot, error ->
@@ -619,8 +645,8 @@ fun PlayWithOpponentScreen(
 
                     if (player1Id != null && player2Id != null && currentUserId != null) {
                         val expectedColor = if (currentUserId == player1Id) PieceColor.WHITE else PieceColor.BLACK
-                        if (viewModel.playerColor.value != expectedColor) {
-                            viewModel.playerColor.value = expectedColor
+                        if (chessViewModel.playerColor.value != expectedColor) {
+                            chessViewModel.playerColor.value = expectedColor
                         }
 
                         opponentId = if (currentUserId == player1Id) player2Id else player1Id
@@ -646,7 +672,7 @@ fun PlayWithOpponentScreen(
                                             playerName = player2Name
                                             playerScore = player2Score
                                             opponentName = player1Name
-                                            opponentScore = player1Score
+                                            opponentScore = player2Score
                                         }
                                     }
                             }
@@ -671,23 +697,16 @@ fun PlayWithOpponentScreen(
             PlayWithOpponentHeader(
                 onBackClick = onBackClick,
                 onExitConfirm = {
-                    viewModel.surrender()
+                    chessViewModel.surrender()
                     onBackClick()
                 },
                 opponentName = opponentName,
                 opponentScore = opponentScore,
-                whiteTime = viewModel.whiteTime.value,
-                blackTime = viewModel.blackTime.value,
-                playerColor = viewModel.playerColor.value,
-                onFriendRequestSent = {
-                    opponentId?.let { id ->
-                        if (id !in sentRequests && friends.none { it.userId == id }) {
-                            friendViewModel.sendFriendRequest(id)
-                        } else {
-                            Toast.makeText(context, "Lời mời đã được gửi hoặc đã là bạn bè!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
+                whiteTime = chessViewModel.whiteTime.value,
+                blackTime = chessViewModel.blackTime.value,
+                playerColor = chessViewModel.playerColor.value,
+                opponentId = opponentId,
+                friendViewModel = friendViewModel,
                 onProfileClick = {
                     opponentId?.let { id ->
                         navController?.navigate("competitor_profile/$id")
@@ -695,55 +714,55 @@ fun PlayWithOpponentScreen(
                 }
             )
             Text(
-                text = "Bạn là bên ${if (viewModel.playerColor.value == PieceColor.WHITE) "trắng" else "đen"}",
+                text = "Bạn là bên ${if (chessViewModel.playerColor.value == PieceColor.WHITE) "trắng" else "đen"}",
                 fontSize = 16.sp,
                 color = Color.White,
                 modifier = Modifier.padding(8.dp)
             )
             Chessboard(
-                board = viewModel.board.value,
-                highlightedSquares = viewModel.highlightedSquares.value,
-                onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
-                playerColor = viewModel.playerColor.value,
+                board = chessViewModel.board.value,
+                highlightedSquares = chessViewModel.highlightedSquares.value,
+                onSquareClicked = { row, col -> chessViewModel.onSquareClicked(row, col) },
+                playerColor = chessViewModel.playerColor.value,
                 clickable = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             )
             Text(
-                text = viewModel.moveHistory.lastOrNull() ?: "Chưa có nước đi",
+                text = chessViewModel.moveHistory.lastOrNull() ?: "Chưa có nước đi",
                 fontSize = 14.sp,
                 color = Color.White,
                 modifier = Modifier.padding(8.dp)
             )
             PlayWithOpponentFooter(
-                onOfferDraw = { viewModel.requestDraw() },
+                onOfferDraw = { chessViewModel.requestDraw() },
                 onSurrender = {
-                    viewModel.surrender()
+                    chessViewModel.surrender()
                     showGameOverDialog = true
                 },
                 playerName = playerName,
                 playerScore = playerScore,
-                whiteTime = viewModel.whiteTime.value,
-                blackTime = viewModel.blackTime.value,
-                playerColor = viewModel.playerColor.value,
-                hasUnreadMessages = viewModel.hasUnreadMessages.value,
+                whiteTime = chessViewModel.whiteTime.value,
+                blackTime = chessViewModel.blackTime.value,
+                playerColor = chessViewModel.playerColor.value,
+                hasUnreadMessages = hasUnreadMessages,
                 onChatClick = { showChatDialog = true }
             )
         }
     }
 
-    if (viewModel.isPromoting.value) {
+    if (chessViewModel.isPromoting.value) {
         PromotionDialog(
-            playerColor = viewModel.playerColor.value ?: PieceColor.WHITE,
+            playerColor = chessViewModel.playerColor.value ?: PieceColor.WHITE,
             onSelect = { pieceType ->
-                viewModel.promotePawn(pieceType)
+                chessViewModel.promotePawn(pieceType)
             },
             onDismiss = {}
         )
     }
 
-    if (viewModel.drawRequest.value != null && viewModel.drawRequest.value != FirebaseAuth.getInstance().currentUser?.uid) {
+    if (chessViewModel.drawRequest.value != null && chessViewModel.drawRequest.value != FirebaseAuth.getInstance().currentUser?.uid) {
         showDrawRequestDialog = true
     }
 
@@ -774,7 +793,7 @@ fun PlayWithOpponentScreen(
                 Button(
                     onClick = {
                         showDrawRequestDialog = false
-                        viewModel.acceptDraw()
+                        chessViewModel.acceptDraw()
                         showGameOverDialog = true
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -791,7 +810,7 @@ fun PlayWithOpponentScreen(
             dismissButton = {
                 TextButton(onClick = {
                     showDrawRequestDialog = false
-                    viewModel.declineDraw()
+                    chessViewModel.declineDraw()
                 }) {
                     Text("Hủy", color = Color.White)
                 }
@@ -800,7 +819,7 @@ fun PlayWithOpponentScreen(
         )
     }
 
-    if (viewModel.isGameOver.value || showGameOverDialog) {
+    if (chessViewModel.isGameOver.value || showGameOverDialog) {
         AlertDialog(
             onDismissRequest = {},
             modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
@@ -816,7 +835,7 @@ fun PlayWithOpponentScreen(
             },
             text = {
                 Text(
-                    text = viewModel.gameResult.value ?: "Trò chơi kết thúc.",
+                    text = chessViewModel.gameResult.value ?: "Trò chơi kết thúc.",
                     color = Color.White,
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
@@ -851,11 +870,14 @@ fun PlayWithOpponentScreen(
 
     if (showChatDialog) {
         ChatDialog(
-            messages = viewModel.chatMessages,
+            messages = messages,
             currentUserId = currentUserId,
             playerName = playerName,
             opponentName = opponentName,
-            onSendMessage = { message -> viewModel.sendMessage(message) },
+            opponentId = opponentId,
+            onSendMessage = { id, message ->
+                chatViewModel.sendMessage(id, message)
+            },
             onDismiss = { showChatDialog = false }
         )
     }
