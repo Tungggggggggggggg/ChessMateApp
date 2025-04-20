@@ -31,11 +31,27 @@
           }
         },
         {
+          "client_id": "734321254855-aqh1m9kr1ivpbshh53ot8id1naiiauau.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chessmate",
+            "certificate_hash": "b33699aaf7799b9fab8abf4e996a8071337a5511"
+          }
+        },
+        {
           "client_id": "734321254855-gc13oapjr9dm39tkln7eh5nur7h6lfl1.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.chessmate",
             "certificate_hash": "e0e38fdf46d02fa7ff3638e622d7e52296f42d78"
+          }
+        },
+        {
+          "client_id": "734321254855-sukai7u8doetds3mg48bd9c8vcved80m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.chessmate",
+            "certificate_hash": "1292f247941795eeeb921ae459f83d532ba40bed"
           }
         },
         {
