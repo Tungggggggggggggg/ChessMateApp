@@ -41,64 +41,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.example.chessmate.viewmodel.ChatViewModel
 
 @Composable
-fun Header(
-    navController: NavController,
-    modifier: Modifier = Modifier,
-    viewModel: ChatViewModel
-) {
-    val hasUnreadMessages = viewModel.hasUnreadMessages.collectAsState()
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colorResource(id = R.color.color_c89f9c))
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(modifier = Modifier.width(20.dp))
-        Box(
-            modifier = Modifier
-                .clickable { navController.navigate("chat") }
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.friend),
-                contentDescription = "Tin nhắn",
-                modifier = Modifier.size(32.dp)
-            )
-            if (hasUnreadMessages.value) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .offset(x = 4.dp, y = (-4).dp)
-                        .align(Alignment.TopEnd)
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(Color.Red)
-                )
-            }
-        }
-        Text(
-            text = "Tìm Bạn",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .weight(1f)
-                .wrapContentWidth(Alignment.CenterHorizontally)
-        )
-        IconButton(
-            onClick = { navController.navigate("profile") },
-            modifier = Modifier.size(40.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.profile),
-                contentDescription = "Hồ sơ",
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(20.dp))
-    }
-}
-
-@Composable
 fun BackButton(
     onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -203,7 +145,7 @@ fun FindFriendsScreen(
         viewModel.loadReceivedRequests()
         viewModel.loadSentRequests()
         viewModel.loadFriends()
-        chatViewModel.loadFriendsWithMessages()
+        // Xóa chatViewModel.loadFriendsWithMessages() vì đã gọi trong MainActivity
     }
 
     val sortedSearchResults = searchResults.sortedWith(compareBy<User> {

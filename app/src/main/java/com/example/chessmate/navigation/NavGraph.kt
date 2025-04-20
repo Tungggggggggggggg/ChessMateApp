@@ -10,14 +10,14 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.example.chessmate.ui.screen.*
 import com.example.chessmate.viewmodel.ChatViewModel
-import com.example.chessmate.viewmodel.ChatViewModelFactory
 import java.net.URLDecoder
+
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = "home"
+    startDestination: String = "home",
+    chatViewModel: ChatViewModel // Nhận ChatViewModel từ MainActivity
 ) {
-    val chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory())
     NavHost(navController = navController, startDestination = startDestination) {
         composable("home") { HomeScreen(navController) }
         composable("login") { LoginScreen(navController) }

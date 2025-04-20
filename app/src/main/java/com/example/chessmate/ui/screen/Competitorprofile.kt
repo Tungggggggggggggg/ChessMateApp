@@ -64,28 +64,6 @@ fun CompetitorProfileHeader(
     }
 }
 
-// Định nghĩa ProfileInfoRow
-@Composable
-fun ProfileInfoRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = value,
-            fontSize = 16.sp
-        )
-    }
-}
 
 @Composable
 fun CompetitorProfileContent(
@@ -209,6 +187,9 @@ fun CompetitorProfileScreen(
     val isFriendRequestSent = opponentId in sentRequests
     val isFriend = friends.any { it.userId == opponentId }
 
+    // Trạng thái để hiển thị AlertDialog
+    var showRemoveFriendDialog by remember { mutableStateOf(false) }
+
     // Tải dữ liệu ban đầu
     LaunchedEffect(opponentId) {
         if (opponentId.isNotEmpty()) {
@@ -231,6 +212,37 @@ fun CompetitorProfileScreen(
         }
     }
 
+    // AlertDialog xác nhận xóa bạn bè
+    if (showRemoveFriendDialog) {
+        AlertDialog(
+            onDismissRequest = { showRemoveFriendDialog = false },
+            title = {
+                Text(text = "Xác nhận xóa bạn bè")
+            },
+            text = {
+                Text(text = "Bạn có chắc chắn muốn xóa ${userData?.get("name")?.toString() ?: "người này"} khỏi danh sách bạn bè không?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        friendViewModel.removeFriend(opponentId)
+                        Toast.makeText(context, "Đã xóa bạn bè!", Toast.LENGTH_SHORT).show()
+                        showRemoveFriendDialog = false
+                    }
+                ) {
+                    Text("Xác nhận")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showRemoveFriendDialog = false }
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         CompetitorProfileHeader(onBackClick = onBackClick)
         CompetitorProfileContent(
@@ -250,8 +262,8 @@ fun CompetitorProfileScreen(
                 Toast.makeText(context, "Đã hủy lời mời kết bạn!", Toast.LENGTH_SHORT).show()
             },
             onRemoveFriendClick = {
-                friendViewModel.removeFriend(opponentId)
-                Toast.makeText(context, "Đã xóa bạn bè!", Toast.LENGTH_SHORT).show()
+                // Hiển thị dialog xác nhận thay vì xóa ngay lập tức
+                showRemoveFriendDialog = true
             },
             isFriendRequestSent = isFriendRequestSent,
             isFriend = isFriend

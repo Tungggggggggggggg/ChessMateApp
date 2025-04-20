@@ -1,4 +1,3 @@
-
 package com.example.chessmate.ui.screen
 
 import android.widget.Toast
@@ -29,7 +28,6 @@ import com.example.chessmate.model.PieceColor
 import com.example.chessmate.model.ChatMessage
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
-import com.example.chessmate.viewmodel.ChatViewModel
 import com.example.chessmate.viewmodel.FindFriendsViewModel
 import com.example.chessmate.viewmodel.OnlineChessViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -526,7 +524,7 @@ fun ChatDialog(
                                     .padding(8.dp)
                             ) {
                                 Text(
-                                    text = message.message, // Chỉ hiển thị nội dung tin nhắn
+                                    text = message.message,
                                     color = Color.Black,
                                     fontSize = 14.sp
                                 )
@@ -587,8 +585,7 @@ fun PlayWithOpponentScreen(
     matchId: String = "",
     onBackClick: () -> Unit = { navController?.popBackStack() },
     chessViewModel: OnlineChessViewModel = viewModel(),
-    friendViewModel: FindFriendsViewModel = viewModel(),
-    chatViewModel: ChatViewModel = viewModel()
+    friendViewModel: FindFriendsViewModel = viewModel()
 ) {
     var showGameOverDialog by remember { mutableStateOf(false) }
     var showDrawRequestDialog by remember { mutableStateOf(false) }
@@ -600,13 +597,13 @@ fun PlayWithOpponentScreen(
     var opponentId by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-    val messages by chatViewModel.messages.collectAsState()
-    val hasUnreadMessages by chatViewModel.hasUnreadMessages.collectAsState()
+    val messages = chessViewModel.chatMessages // Directly use SnapshotStateList
+    val hasUnreadMessages by chessViewModel.hasUnreadMessages
 
     // Lắng nghe tin nhắn khi có opponentId
     LaunchedEffect(opponentId) {
         opponentId?.let { id ->
-            chatViewModel.listenToChatMessages(id)
+            chessViewModel.listenToChatMessages()
         }
     }
 
@@ -614,7 +611,7 @@ fun PlayWithOpponentScreen(
     LaunchedEffect(showChatDialog, opponentId) {
         if (showChatDialog) {
             opponentId?.let { id ->
-                chatViewModel.markMessagesAsRead(id)
+                chessViewModel.markMessagesAsRead()
             }
         }
     }
@@ -870,13 +867,13 @@ fun PlayWithOpponentScreen(
 
     if (showChatDialog) {
         ChatDialog(
-            messages = messages,
+            messages = messages, // Directly pass SnapshotStateList
             currentUserId = currentUserId,
             playerName = playerName,
             opponentName = opponentName,
             opponentId = opponentId,
             onSendMessage = { id, message ->
-                chatViewModel.sendMessage(id, message)
+                chessViewModel.sendMessage(message)
             },
             onDismiss = { showChatDialog = false }
         )
