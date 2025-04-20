@@ -64,6 +64,29 @@ fun CompetitorProfileHeader(
     }
 }
 
+// Định nghĩa ProfileInfoRow
+@Composable
+fun ProfileInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = value,
+            fontSize = 16.sp
+        )
+    }
+}
+
 @Composable
 fun CompetitorProfileContent(
     modifier: Modifier = Modifier,
@@ -186,8 +209,10 @@ fun CompetitorProfileScreen(
     val isFriendRequestSent = opponentId in sentRequests
     val isFriend = friends.any { it.userId == opponentId }
 
+    // Tải dữ liệu ban đầu
     LaunchedEffect(opponentId) {
         if (opponentId.isNotEmpty()) {
+            // Tải thông tin người dùng từ Firestore
             Firebase.firestore.collection("users")
                 .document(opponentId)
                 .get()
@@ -199,6 +224,10 @@ fun CompetitorProfileScreen(
                 .addOnFailureListener {
                     Toast.makeText(context, "Lỗi khi tải thông tin đối thủ!", Toast.LENGTH_SHORT).show()
                 }
+
+            // Tải danh sách bạn bè và lời mời đã gửi
+            friendViewModel.loadSentRequests()
+            friendViewModel.loadFriends()
         }
     }
 
