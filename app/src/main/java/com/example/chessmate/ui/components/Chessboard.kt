@@ -24,6 +24,7 @@ fun Chessboard(
     highlightedSquares: List<Move>,
     onSquareClicked: (row: Int, col: Int) -> Unit,
     playerColor: PieceColor?,
+    clickable: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val isWhitePerspective = playerColor == PieceColor.WHITE || playerColor == null
@@ -102,7 +103,10 @@ fun Chessboard(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .background(squareColor)
-                                    .clickable { onSquareClicked(displayRow, displayCol) },
+                                    .then(
+                                        if (clickable) Modifier.clickable { onSquareClicked(displayRow, displayCol) }
+                                        else Modifier
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 val piece = board[displayRow][displayCol]

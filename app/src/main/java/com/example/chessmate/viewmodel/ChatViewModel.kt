@@ -5,16 +5,21 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.chessmate.model.ChatMessage
 import com.example.chessmate.model.User
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.util.Log
 
+data class FriendWithLastMessage(
+    val friend: User,
+    val lastMessage: ChatMessage? = null,
+    val hasUnread: Boolean = false
+)
+
 class ChatViewModel : ViewModel() {
-    private val _friends = MutableStateFlow<List<User>>(emptyList())
-    val friends: StateFlow<List<User>> get() = _friends
+    private val _friendsWithMessages = MutableStateFlow<List<FriendWithLastMessage>>(emptyList())
+    val friendsWithMessages: StateFlow<List<FriendWithLastMessage>> get() = _friendsWithMessages
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> get() = _messages
@@ -26,40 +31,83 @@ class ChatViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     private var messageSequence = 0L
     private var chatListener: ListenerRegistration? = null
+    private var friendsListener: ListenerRegistration? = null
     private var currentConversationId: String? = null
 
-    // Thuộc tính công khai để lấy currentUserId
     val currentUserId: String? get() = auth.currentUser?.uid
 
     init {
-        loadFriends()
+        loadFriendsWithMessages()
     }
 
-    fun loadFriends() {
+    fun loadFriendsWithMessages() {
         val currentUserId = auth.currentUser?.uid ?: return
-        firestore.collection("friends")
+
+        friendsListener?.remove()
+
+        friendsListener = firestore.collection("friends")
             .whereIn("user1", listOf(currentUserId))
-            .get()
-            .addOnSuccessListener { result1 ->
+            .addSnapshotListener { result1, error1 ->
+                if (error1 != null || result1 == null) {
+                    Log.e("ChatViewModel", "Error loading friends (user1): ${error1?.message}")
+                    return@addSnapshotListener
+                }
+
                 firestore.collection("friends")
                     .whereIn("user2", listOf(currentUserId))
-                    .get()
-                    .addOnSuccessListener { result2 ->
+                    .addSnapshotListener { result2, error2 ->
+                        if (error2 != null || result2 == null) {
+                            Log.e("ChatViewModel", "Error loading friends (user2): ${error2?.message}")
+                            return@addSnapshotListener
+                        }
+
                         val allDocs = result1.documents + result2.documents
-                        val fetchedFriends = mutableSetOf<User>()
+                        val friendList = mutableListOf<FriendWithLastMessage>()
+                        val processedFriendIds = mutableSetOf<String>()
+
                         allDocs.forEach { doc ->
                             val user1 = doc.getString("user1")
                             val user2 = doc.getString("user2")
                             val friendId = if (user1 == currentUserId) user2 else user1
-                            if (!friendId.isNullOrBlank()) {
+                            if (!friendId.isNullOrBlank() && friendId !in processedFriendIds) {
+                                processedFriendIds.add(friendId)
                                 firestore.collection("users").document(friendId).get()
                                     .addOnSuccessListener { userDoc ->
                                         val name = userDoc.getString("name") ?: "Không xác định"
                                         val email = userDoc.getString("email") ?: ""
                                         val isOnline = userDoc.getBoolean("isOnline") ?: false
-                                        fetchedFriends.add(User(friendId, name, email, isOnline))
-                                        _friends.value = fetchedFriends.toList()
-                                        Log.d("ChatViewModel", "Loaded friend: ID=$friendId, Name=$name")
+                                        val friend = User(friendId, name, email, isOnline)
+
+                                        val conversationId = getConversationId(currentUserId, friendId)
+                                        firestore.collection("conversations")
+                                            .document(conversationId)
+                                            .collection("chat_messages")
+                                            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                                            .limit(1)
+                                            .addSnapshotListener { snapshot, error ->
+                                                if (error != null || snapshot == null) {
+                                                    Log.e("ChatViewModel", "Error loading last message: ${error?.message}")
+                                                    return@addSnapshotListener
+                                                }
+
+                                                val lastMessage = snapshot.documents.firstOrNull()?.let { doc ->
+                                                    val senderId = doc.getString("senderId") ?: return@let null
+                                                    val message = doc.getString("message") ?: return@let null
+                                                    val timestamp = doc.getLong("timestamp") ?: return@let null
+                                                    val sequence = doc.getLong("sequence") ?: 0L
+                                                    val readBy = doc.get("readBy") as? List<String> ?: emptyList()
+                                                    ChatMessage(senderId, message, timestamp, sequence, readBy)
+                                                }
+
+                                                val hasUnread = lastMessage?.let { msg ->
+                                                    msg.senderId != currentUserId && !msg.readBy.contains(currentUserId)
+                                                } ?: false
+
+                                                friendList.removeAll { it.friend.userId == friendId }
+                                                friendList.add(FriendWithLastMessage(friend, lastMessage, hasUnread))
+                                                _friendsWithMessages.value = friendList.sortedBy { it.lastMessage?.timestamp ?: 0L }.reversed()
+                                                Log.d("ChatViewModel", "Loaded friend: ID=$friendId, Name=$name, LastMessage=${lastMessage?.message}, Unread=$hasUnread")
+                                            }
                                     }
                             }
                         }
@@ -145,7 +193,7 @@ class ChatViewModel : ViewModel() {
                 snapshot.documents.forEach { doc ->
                     val readBy = doc.get("readBy") as? List<String> ?: emptyList()
                     if (currentUserId !in readBy) {
-                        batch.update(doc.reference, "readBy", FieldValue.arrayUnion(currentUserId))
+                        batch.update(doc.reference, "readBy", com.google.firebase.firestore.FieldValue.arrayUnion(currentUserId))
                     }
                 }
                 batch.commit()
@@ -161,30 +209,6 @@ class ChatViewModel : ViewModel() {
             }
     }
 
-    fun removeFriend(friend: User) {
-        val currentUserId = auth.currentUser?.uid ?: return
-        firestore.collection("friends")
-            .whereEqualTo("user1", currentUserId)
-            .whereEqualTo("user2", friend.userId)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                querySnapshot.documents.firstOrNull()?.reference?.delete()?.addOnSuccessListener {
-                    _friends.value = _friends.value.filter { it.userId != friend.userId }
-                    Log.d("ChatViewModel", "Removed friend: ID=${friend.userId}, Name=${friend.name}")
-                }
-            }
-        firestore.collection("friends")
-            .whereEqualTo("user1", friend.userId)
-            .whereEqualTo("user2", currentUserId)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                querySnapshot.documents.firstOrNull()?.reference?.delete()?.addOnSuccessListener {
-                    _friends.value = _friends.value.filter { it.userId != friend.userId }
-                    Log.d("ChatViewModel", "Removed friend: ID=${friend.userId}, Name=${friend.name}")
-                }
-            }
-    }
-
     fun getConversationId(userId1: String, userId2: String): String {
         return if (userId1 < userId2) "${userId1}_${userId2}" else "${userId2}_${userId1}"
     }
@@ -192,6 +216,7 @@ class ChatViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         chatListener?.remove()
+        friendsListener?.remove()
         currentConversationId = null
     }
 }

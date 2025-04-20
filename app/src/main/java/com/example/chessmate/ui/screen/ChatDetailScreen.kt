@@ -2,9 +2,11 @@ package com.example.chessmate.ui.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,8 +32,10 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun ChatDetailHeader(
+    friendId: String,
     friendName: String,
     onBackClick: () -> Unit,
+    navController: NavController?,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -53,22 +57,24 @@ fun ChatDetailHeader(
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = friendName,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier
+                .weight(1f)
+                .wrapContentWidth(Alignment.Start)
+        )
         Image(
             painter = painterResource(id = R.drawable.profile),
             contentDescription = "Avatar",
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = friendName,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier
-                .weight(1f)
-                .wrapContentWidth(Alignment.Start)
+                .clickable {
+                    navController?.navigate("competitor_profile/$friendId")
+                }
         )
         Spacer(modifier = Modifier.width(20.dp))
     }
@@ -88,7 +94,7 @@ fun MessageItem(
         Box(
             modifier = Modifier
                 .background(
-                    if (isCurrentUser) Color(0xFFBBDEFB) else Color.White,
+                    if (isCurrentUser) colorResource(id = R.color.color_c98e7d) else colorResource(id = R.color.color_dbbbb1),
                     RoundedCornerShape(
                         topStart = 12.dp,
                         topEnd = 12.dp,
@@ -112,18 +118,18 @@ fun MessageItem(
 fun ChatDetailContent(
     messages: List<ChatMessage>,
     currentUserId: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    listState: LazyListState
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(colorResource(id = R.color.color_c97c5d))
     ) {
-        val listState = rememberLazyListState()
         LaunchedEffect(messages) {
             if (messages.isNotEmpty()) {
                 delay(100)
-                listState.animateScrollToItem(0) // Cuộn đến mục đầu tiên (dưới cùng do reverseLayout)
+                listState.animateScrollToItem(0)
             }
         }
 
@@ -132,10 +138,10 @@ fun ChatDetailContent(
                 .weight(1f)
                 .fillMaxWidth(),
             state = listState,
-            reverseLayout = true, // Đảo ngược để tin nhắn mới ở dưới
+            reverseLayout = true,
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(messages.reversed()) { message -> // Đảo ngược danh sách để khớp với reverseLayout
+            items(messages.reversed()) { message ->
                 MessageItem(
                     message = message,
                     isCurrentUser = message.senderId == currentUserId
@@ -162,23 +168,26 @@ fun ChatInput(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.image),
-                contentDescription = "Hình ảnh",
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Image(
-                painter = painterResource(id = R.drawable.mic),
-                contentDescription = "Micro",
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
             OutlinedTextField(
                 value = messageText,
                 onValueChange = onMessageChange,
                 placeholder = { Text("Nhập tin nhắn...") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Black,
+                    unfocusedIndicatorColor = Color.Black,
+                    disabledIndicatorColor = Color.Black,
+                    errorIndicatorColor = Color.Black,
+                    focusedContainerColor = colorResource(id = R.color.color_c89f9c),
+                    unfocusedContainerColor = colorResource(id = R.color.color_c89f9c),
+                    disabledContainerColor = colorResource(id = R.color.color_c89f9c),
+                    errorContainerColor = colorResource(id = R.color.color_c89f9c),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    focusedPlaceholderColor = Color.Black,
+                    unfocusedPlaceholderColor = Color.Black,
+                    cursorColor = Color.Black
+                )
             )
             IconButton(onClick = onSendMessage) {
                 Image(
@@ -202,26 +211,33 @@ fun ChatDetailScreen(
     val messages by viewModel.messages.collectAsState()
     val hasUnreadMessages by viewModel.hasUnreadMessages.collectAsState()
     var messageText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
 
     LaunchedEffect(friendId) {
         val currentUserId = viewModel.currentUserId ?: ""
         val conversationId = viewModel.getConversationId(currentUserId, friendId)
         Log.d("ChatDetailScreen", "Friend ID: $friendId, Conversation ID: $conversationId")
         viewModel.listenToChatMessages(friendId)
-        if (hasUnreadMessages) {
+    }
+
+    LaunchedEffect(messages, listState.firstVisibleItemIndex) {
+        if (messages.isNotEmpty() && hasUnreadMessages) {
             viewModel.markMessagesAsRead(friendId)
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         ChatDetailHeader(
+            friendId = friendId,
             friendName = friendName,
-            onBackClick = onBackClick
+            onBackClick = onBackClick,
+            navController = navController
         )
         ChatDetailContent(
             messages = messages,
             currentUserId = viewModel.currentUserId,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            listState = listState
         )
         ChatInput(
             messageText = messageText,

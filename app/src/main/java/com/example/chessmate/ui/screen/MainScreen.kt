@@ -15,13 +15,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.model.PieceColor
 import com.example.chessmate.ui.components.ButtonItem
 import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.Logo
+import com.example.chessmate.viewmodel.ChatViewModel
 import com.example.chessmate.viewmodel.ChessViewModel
 import com.example.chessmate.viewmodel.FindFriendsViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -30,8 +30,11 @@ import com.google.firebase.auth.FirebaseAuth
 fun MainHeader(
     navController: NavController,
     modifier: Modifier = Modifier,
-    onMessageClick: () -> Unit = {}
+    onMessageClick: () -> Unit = {},
+    viewModel: ChatViewModel
 ) {
+    val hasUnreadMessages = viewModel.hasUnreadMessages.collectAsState()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -50,14 +53,16 @@ fun MainHeader(
                     contentDescription = "Tin nhắn",
                     modifier = Modifier.size(32.dp)
                 )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .offset(x = 4.dp, y = (-4).dp)
-                        .align(Alignment.TopEnd)
-                        .clip(CircleShape)
-                        .background(Color.Red)
-                )
+                if (hasUnreadMessages.value) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .offset(x = 4.dp, y = (-4).dp)
+                            .align(Alignment.TopEnd)
+                            .clip(CircleShape)
+                            .background(Color.Red)
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -137,8 +142,9 @@ fun MainButtonRow(
 @Composable
 fun MainScreen(
     navController: NavController,
-    viewModel: ChessViewModel = viewModel(),
-    friendViewModel: FindFriendsViewModel = viewModel()
+    viewModel: ChessViewModel,
+    friendViewModel: FindFriendsViewModel,
+    chatViewModel: ChatViewModel
 ) {
     val auth = FirebaseAuth.getInstance()
     val receivedRequests = friendViewModel.receivedRequests.collectAsState()
@@ -151,6 +157,7 @@ fun MainScreen(
             }
         }
         friendViewModel.loadReceivedRequests()
+        chatViewModel.loadFriendsWithMessages()
     }
 
     Scaffold(
@@ -168,7 +175,8 @@ fun MainScreen(
         ) {
             MainHeader(
                 navController = navController,
-                onMessageClick = { navController.navigate("chat") }
+                onMessageClick = { navController.navigate("chat") },
+                viewModel = chatViewModel
             )
             Logo()
             Spacer(modifier = Modifier.height(20.dp))
@@ -180,8 +188,9 @@ fun MainScreen(
             Chessboard(
                 board = viewModel.board.value,
                 highlightedSquares = viewModel.highlightedSquares.value,
-                onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
+                onSquareClicked = { _, _ -> },
                 playerColor = PieceColor.WHITE,
+                clickable = false,
                 modifier = Modifier.fillMaxWidth()
             )
         }

@@ -101,8 +101,9 @@ fun HomeScreen(
                 Chessboard(
                     board = viewModel.board.value,
                     highlightedSquares = viewModel.highlightedSquares.value,
-                    onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
+                    onSquareClicked = { _, _ -> },
                     playerColor = PieceColor.WHITE,
+                    clickable = false,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

@@ -195,6 +195,7 @@ fun PlayWithFriendScreen(
                 highlightedSquares = viewModel.highlightedSquares.value,
                 onSquareClicked = { row, col -> viewModel.onSquareClicked(row, col) },
                 playerColor = viewModel.playerColor.value,
+                clickable = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)

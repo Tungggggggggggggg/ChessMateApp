@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
@@ -26,11 +27,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.chessmate.R
 import com.example.chessmate.ui.components.Logo
 import com.example.chessmate.model.FriendRequest
@@ -39,12 +38,16 @@ import com.example.chessmate.viewmodel.FindFriendsViewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.graphics.graphicsLayer
+import com.example.chessmate.viewmodel.ChatViewModel
 
 @Composable
 fun Header(
     navController: NavController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: ChatViewModel
 ) {
+    val hasUnreadMessages = viewModel.hasUnreadMessages.collectAsState()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -62,6 +65,16 @@ fun Header(
                 contentDescription = "Tin nhắn",
                 modifier = Modifier.size(32.dp)
             )
+            if (hasUnreadMessages.value) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .offset(x = 4.dp, y = (-4).dp)
+                        .align(Alignment.TopEnd)
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Color.Red)
+                )
+            }
         }
         Text(
             text = "Tìm Bạn",
@@ -172,7 +185,8 @@ fun SearchBar(
 @Composable
 fun FindFriendsScreen(
     navController: NavController,
-    viewModel: FindFriendsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: FindFriendsViewModel,
+    chatViewModel: ChatViewModel
 ) {
     val searchResults by viewModel.searchResults.collectAsState()
     val receivedRequests by viewModel.receivedRequests.collectAsState()
@@ -189,9 +203,9 @@ fun FindFriendsScreen(
         viewModel.loadReceivedRequests()
         viewModel.loadSentRequests()
         viewModel.loadFriends()
+        chatViewModel.loadFriendsWithMessages()
     }
 
-    // Sắp xếp searchResults: bạn bè -> đã gửi lời mời -> còn lại
     val sortedSearchResults = searchResults.sortedWith(compareBy<User> {
         when {
             friends.any { friend -> friend.userId == it.userId } -> 0
@@ -200,7 +214,6 @@ fun FindFriendsScreen(
         }
     })
 
-    // Đồng bộ hóa isSearchEmpty với kết quả tìm kiếm
     LaunchedEffect(searchResults, currentSearchQuery) {
         if (searchQuery == currentSearchQuery) {
             isSearchEmpty = searchQuery.isNotBlank() && searchResults.isEmpty()
@@ -208,7 +221,10 @@ fun FindFriendsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Header(navController = navController)
+        Header(
+            navController = navController,
+            viewModel = chatViewModel
+        )
 
         Column(
             modifier = Modifier
@@ -406,7 +422,6 @@ fun SearchResultItem(
                 Text(text = "Bạn bè")
             }
         } else {
-            // Hiển thị nút "Xóa lời mời"
             Button(
                 onClick = onCancelFriendRequest,
                 colors = ButtonDefaults.buttonColors(
@@ -467,11 +482,4 @@ fun FriendRequestItem(
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun FindFriendsScreenPreview() {
-    val navController = rememberNavController()
-    FindFriendsScreen(navController)
 }
