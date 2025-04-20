@@ -1,94 +1,166 @@
 \documentclass[a4paper,12pt]{article}
 
-\usepackage[utf8]{inputenc} % Để hỗ trợ tiếng Việt
-\usepackage[vietnamese]{babel} % Ngôn ngữ tiếng Việt
-\usepackage{amsmath} % Hỗ trợ các công thức toán học
-\usepackage{graphicx} % Hỗ trợ chèn hình ảnh
-\usepackage{geometry} % Để chỉnh lề trang
-\usepackage{mathptmx} % Sử dụng font Times New Roman
+\usepackage[utf8]{inputenc}     % hỗ trợ tiếng Việt
+\usepackage[vietnamese]{babel}   % ngôn ngữ tiếng Việt
+\usepackage{amsmath}             % công thức toán học
+\usepackage{graphicx}            % chèn hình ảnh
+\usepackage{geometry}            % chỉnh lề
 \geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2cm}
-\usepackage{ragged2e} % Để căn đều hai bên
-\usepackage{setspace} % Để điều chỉnh khoảng cách dòng
-\usepackage{parskip} % Thêm gói parskip
-\usepackage{enumitem} % Để tùy chỉnh danh sách
-\usepackage{hyperref} % Thêm gói hyperref để hỗ trợ link
+\usepackage{mathptmx}            % font Times New Roman
+\usepackage{ragged2e}            % căn đều hai bên
+\usepackage{setspace}            % khoảng cách dòng
+\usepackage{parskip}             % parskip giữa đoạn
+\usepackage{enumitem}            % tuỳ chỉnh list
+\usepackage{hyperref}            % link
+\usepackage{array}               % định nghĩa m{…} column
+\usepackage{makecell}            % \thead nếu cần
+
+% --- Định nghĩa lại cột căn giữa ngang + dọc ---
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
 
 \begin{document}
 
-% Trang bìa
-\thispagestyle{empty} % Lệnh bỏ đánh số trang cho trang hiện tại
+%--- Trang bìa ---
+\thispagestyle{empty}
 \begin{center}
-    \textbf{BỘ GIAO THÔNG VẬN TẢI}\\
-    \textbf{TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI TP. HỒ CHÍ MINH}\\
-    \textbf{KHOA CÔNG NGHỆ THÔNG TIN}\\
-    \textbf{--------------------o0o--------------------}\\[1.5cm]
+  \textbf{BỘ GIAO THÔNG VẬN TẢI}\\
+  \textbf{TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI TP. HỒ CHÍ MINH}\\
+  \textbf{KHOA CÔNG NGHỆ THÔNG TIN}\\
+  \textbf{--------------------o0o--------------------}\\[1.5cm]
 
-    \includegraphics[width=0.3\textwidth]{img/logo_uth.png}\\[1.5cm]
+  \includegraphics[width=0.3\textwidth]{img/logo_uth.png}\\[1.5cm]
 
-    \textbf{\LARGE BÁO CÁO BÀI TẬP LỚN}\\[1cm]
+  \textbf{\LARGE BÁO CÁO BÀI TẬP LỚN}\\[1cm]
+  \textbf{\large \textit{Đề tài:}}\\[0.5cm]
+  \textbf{\Large LẬP TRÌNH ỨNG DỤNG TRÒ CHƠI CỜ VUA}\\[0.2cm]
+  \textbf{\Large TRÊN NỀN TẢNG ANDROID}\\[1cm]
 
-    \textbf{\large \textit{Đề tài:}}\\[0.5cm]
-    \textbf{\Large LẬP TRÌNH ỨNG DỤNG TRÒ CHƠI CỜ VUA}\\[0.2cm]
-    \textbf{\Large TRÊN NỀN TẢNG ANDROID}\\[1cm]
+  \begin{flushleft}
+    \textbf{\large Học phần:} LẬP TRÌNH THIẾT BỊ DI ĐỘNG\\[0.5cm]
+    \textbf{\large Mã học phần:} 010112103401\\[1cm]
+    \hspace{5cm}\textbf{\large SVTH:}\\
+    \hspace{5cm} Nguyễn Quốc Tùng\\
+    \hspace{5cm} Nguyễn Nhật Lâm\\
+    \hspace{5cm} Nguyễn Phi Khanh\\[1cm]
+    \hspace{5cm}\textbf{\large CBHD:} Thầy Trương Quang Tuấn\\[2cm]
+  \end{flushleft}
 
-    \begin{flushleft}
-        \textbf{\large Học phần:} \textbf{LẬP TRÌNH THIẾT BỊ DI ĐỘNG}\\[0.5cm]
-        \textbf{\large Mã học phần:} \textbf{010112103401}\\[1cm]
-
-        \hspace{5cm}\textbf{\large SVTH:}
-        \hspace{0cm} Nguyễn Quốc Tùng\\
-        \hspace{6.9cm} Nguyễn Nhật Lâm\\
-        \hspace{6.9cm} Nguyễn Phi Khanh\\[1cm]
-
-        \hspace{5cm}\textbf{\large CBHD:} \textbf{Thầy Trương Quang Tuấn}\\[2cm]
-    \end{flushleft}
-
-    \textbf{TP. Hồ Chí Minh - 2025}
+  \textbf{TP. Hồ Chí Minh - 2025}
 \end{center}
 
-
-\newpage % Bắt đầu trang mới cho Lời cảm ơn
-\thispagestyle{empty} % Lệnh bỏ đánh số trang cho trang hiện tại
-
+\newpage
+\thispagestyle{empty}
 \begin{center}
-    \textbf{\Large LỜI CẢM ƠN}
+  \textbf{\Large LỜI CẢM ƠN}
 \end{center}
+\onehalfspacing
+\justify
+\noindent
+Chúng em xin gửi lời cảm ơn chân thành đến Ban Giám hiệu Trường Đại học Giao thông Vận tải đã tạo điều kiện thuận lợi… (phần cảm ơn bạn giữ nguyên).
 
-\onehalfspacing % Đặt khoảng cách dòng là 1.5
+\clearpage
+\newgeometry{top=1.5cm,bottom=1.5cm}
 
-\justify % Bắt đầu căn đều hai bên cho các đoạn văn
-
-\noindent Chúng em xin gửi lời cảm ơn chân thành đến Ban Giám hiệu Trường Đại học Giao thông Vận tải đã tạo điều kiện thuận lợi, giúp chúng em có được môi trường học tập và nghiên cứu lý tưởng nhất. Trong quá trình thực hiện đồ án Lập trình thiết bị di động, em xin chân thành gửi lời cảm ơn đến Thầy Trương Quang Tuấn – người đã tận tình giảng dạy và hướng dẫn em trong suốt quá trình học tập và thực hiện đề tài này.
-
-\noindent Thầy không chỉ cung cấp những kiến thức chuyên môn quý báu mà còn luôn khuyến khích, tạo điều kiện để em rèn luyện khả năng tư duy, sáng tạo và ứng dụng thực tiễn.
-
-\noindent Mặc dù đã rất cố gắng, nhưng do kiến thức còn hạn chế và thời gian nghiên cứu có giới hạn, đồ án vẫn còn nhiều thiếu sót. Chúng em mong thầy có thể bỏ qua những sai sót đó và dành cho chúng em những góp ý chân thành. Những đóng góp quý báu của thầy sẽ là kinh nghiệm vô cùng quý giá, giúp chúng em tự tin hơn trong việc hoàn thiện các dự án tiếp theo.
-
-\noindent Một lần nữa, em xin chân thành cảm ơn!
-
-\newpage % Bắt đầu một trang mới
-\thispagestyle{empty} % Lệnh bỏ đánh số trang cho trang hiện tại
-
-\section*{\centering \fontsize{16pt}{\baselineskip}\selectfont \textbf{BẢNG PHÂN CÔNG CÔNG VIỆC CHO CÁC THÀNH VIÊN}} %Tiêu đề trang, căn giữa, in đậm
+%--- Bảng phân công công việc ---
+\section*{\centering \fontsize{15pt}{\baselineskip}\selectfont \textbf{BẢNG PHÂN CÔNG CÔNG VIỆC CHO CÁC THÀNH VIÊN}}
 
 \begin{center}
-\begin{tabular}{|l|l|l|}
-\hline
-\textbf{MSSV} & \textbf{Họ và tên} & \textbf{Nhiệm vụ} \\
-\hline
-2251120259& Nguyễn Quốc Tùng & ... \\
-\hline
-2251120222 & Nguyễn Nhật Lâm & ... \\
-\hline
-2251120217 & Nguyễn Phi Khanh & ... \\
-\hline
+\footnotesize
+\begin{tabular}{| C{2cm} | C{3cm} | m{8cm} |}
+  \hline
+  \textbf{MSSV} & \textbf{Họ và tên} & \multicolumn{1}{|>{\centering\arraybackslash}m{8cm}|}{\textbf{Nhiệm vụ}} \\
+  \hline
+
+  2251120259
+  & Nguyễn Quốc Tùng
+  &
+  \begin{itemize}[leftmargin=*,itemsep=0pt,parsep=0pt]
+    \item \textbf{Giao diện trong trận:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+\item Xử lý bàn cờ, quân cờ và trạng thái ván chơi.
+        \item Xử lý lượt đi, luật chơi và kết thúc ván.
+      \end{itemize}
+    \item \textbf{Giao diện bàn cờ:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Hiển thị trực quan các quân cờ và nước đi hợp lệ.
+        \item Animation di chuyển quân cờ.
+      \end{itemize}
+    \item \textbf{Giao diện chơi với AI:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Thiết lập chế độ chơi với máy.
+        \item Tính toán nước đi tự động của AI.
+      \end{itemize}
+    \item \textbf{Giao diện chơi với bạn:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Chế độ chơi 2 người trên cùng thiết bị.
+      \end{itemize}
+  \end{itemize}
+  \\
+  \hline
+
+  2251120222
+  & Nguyễn Nhật Lâm
+  &
+  \begin{itemize}[leftmargin=*,itemsep=0pt,parsep=0pt]
+    \item \textbf{Giao diện login và register:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Đăng nhập và đăng ký tài khoản.
+        \item Kiểm tra và xác thực thông tin người dùng.
+      \end{itemize}
+    \item \textbf{Giao diện tìm trận:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Tìm kiếm và ghép trận với người chơi khác.
+      \end{itemize}
+    \item \textbf{Giao diện chơi online:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Đồng bộ nước đi giữa 2 người chơi thời gian thực.
+      \end{itemize}
+    \item \textbf{Giao diện nhắn tin:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Gửi và nhận tin nhắn với bạn bè.
+        \item Hiển thị danh sách bạn bè đang online.
+      \end{itemize}
+  \end{itemize}
+  \\
+  \hline
+
+  2251120217
+  & Nguyễn Phi Khanh
+  &
+  \begin{itemize}[leftmargin=*,itemsep=0pt,parsep=0pt]
+    \item \textbf{Giao diện trang chủ:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Hiển thị tổng quan và điều hướng các chức năng chính.
+      \end{itemize}
+    \item \textbf{Giao diện tìm bạn:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Tìm kiếm người chơi.
+        \item Gửi và nhận lời mời kết bạn.
+      \end{itemize}
+    \item \textbf{Giao diện hồ sơ:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Hiển thị thông tin cá nhân và cho phép chỉnh sửa.
+      \end{itemize}
+    \item \textbf{Giao diện lịch sử trận đấu:}
+      \begin{itemize}[leftmargin=1em,itemsep=0pt]
+        \item Hiển thị danh sách các ván đã chơi.
+        \item Xem lại ván đấu và thống kê kết quả.
+      \end{itemize}
+  \end{itemize}
+  \\
+  \hline
 \end{tabular}
 \end{center}
+
+%Khôi phục lại bảng
+\restoregeometry
+
 
 \newpage
 \thispagestyle{empty} % Lệnh bỏ đánh số trang cho trang hiện tại
 
 \tableofcontents
+\thispagestyle{empty}
 
 \newpage % Bắt đầu trang mới cho Lời mở đầu
 
