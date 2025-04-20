@@ -14,6 +14,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.chessmate.R
@@ -115,7 +117,8 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(colorResource(id = R.color.color_c97c5d)),
+                .background(colorResource(id = R.color.color_c97c5d))
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
