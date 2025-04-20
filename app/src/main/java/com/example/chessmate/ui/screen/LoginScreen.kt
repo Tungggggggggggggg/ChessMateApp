@@ -80,7 +80,7 @@ fun Header(onBackClick: () -> Unit) {
 }
 
 @Composable
-fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> Unit) {
+fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> Unit, onNavigateToRegister: () -> Unit){
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -139,19 +139,6 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
         InputField(label = "Tài khoản:", value = username, onValueChange = { username = it }, placeholder = "Nhập tài khoản ...")
         InputField(label = "Mật khẩu:", value = password, onValueChange = { password = it }, isPassword = true, placeholder = "Nhập mật khẩu ...")
 
-        Text(
-            text = "Quên mật khẩu?",
-            fontSize = 14.sp,
-            fontStyle = FontStyle.Italic,
-            textDecoration = TextDecoration.Underline,
-            color = Color.Blue,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(top = 4.dp)
-                .clickable {
-                    // TODO: Xử lý quên mật khẩu
-                }
-        )
 
         if (errorMessage.isNotEmpty()) {
             Text(
@@ -162,6 +149,8 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
@@ -193,6 +182,17 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
             Image(painter = painterResource(id = R.drawable.google_logo), contentDescription = "Google Logo", modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text("Đăng nhập với Google", fontSize = 16.sp)
+        }
+        TextButton(
+            onClick = onNavigateToRegister,
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Text(
+                text = "Chưa có tài khoản?",
+                fontSize = 14.sp,
+                color = Color.White,
+                textDecoration = TextDecoration.Underline
+            )
         }
     }
 }
@@ -415,6 +415,9 @@ fun LoginScreen(navController: NavController? = null) {
                     }.addOnFailureListener { e ->
                         Toast.makeText(context, "Lỗi khi bắt đầu đăng nhập Google: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
+                },
+                onNavigateToRegister = {
+                    navController?.navigate("register") // Chuyển hướng tới màn hình đăng ký
                 }
             )
         }
@@ -437,7 +440,8 @@ fun LoginScreenPreviewContent() {
             Spacer(modifier = Modifier.height(20.dp))
             LoginForm(
                 onLoginClick = { _, _ -> },
-                onGoogleLoginClick = {}
+                onGoogleLoginClick = {},
+                onNavigateToRegister = {}
             )
         }
     }
