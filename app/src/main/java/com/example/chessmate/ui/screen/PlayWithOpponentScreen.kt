@@ -136,7 +136,7 @@ fun PlayWithOpponentHeader(
                 .align(Alignment.Center)
                 .offset(x = 106.dp)
                 .padding(top = 24.dp)
-                .width(94.dp)
+                .width(100.dp)
                 .height(32.dp)
                 .background(
                     colorResource(id = if (isFriendRequestSent || isFriend) R.color.color_b36a5e else R.color.color_eed7c5),
@@ -161,7 +161,7 @@ fun PlayWithOpponentHeader(
                 text = when {
                     isFriend -> "Bạn bè"
                     isFriendRequestSent -> "Xóa lời mời"
-                    else -> "Gửi lời mời"
+                    else -> "Kết bạn"
                 },
                 fontSize = 18.sp,
                 color = Color.Black,
