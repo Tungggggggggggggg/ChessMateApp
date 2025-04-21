@@ -80,10 +80,11 @@ fun Header(onBackClick: () -> Unit) {
 }
 
 @Composable
-fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> Unit, onNavigateToRegister: () -> Unit){
+fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> Unit, onNavigateToRegister: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(
@@ -97,17 +98,19 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
             value: String,
             onValueChange: (String) -> Unit,
             isPassword: Boolean = false,
-            placeholder: String
+            placeholder: String,
+            errorMessage: String? = null
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = label,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(bottom = 4.dp)
+                    modifier = Modifier.align(Alignment.Start)
                 )
                 Box(
                     modifier = Modifier
@@ -133,31 +136,55 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+                errorMessage?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
             }
         }
 
-        InputField(label = "Tài khoản:", value = username, onValueChange = { username = it }, placeholder = "Nhập tài khoản ...")
-        InputField(label = "Mật khẩu:", value = password, onValueChange = { password = it }, isPassword = true, placeholder = "Nhập mật khẩu ...")
-
-
-        if (errorMessage.isNotEmpty()) {
-            Text(
-                text = errorMessage,
-                color = Color.Blue,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
+        InputField(
+            label = "Tài khoản:",
+            value = username,
+            onValueChange = { username = it },
+            placeholder = "Nhập tài khoản ...",
+            errorMessage = usernameError
+        )
+        InputField(
+            label = "Mật khẩu:",
+            value = password,
+            onValueChange = { password = it },
+            isPassword = true,
+            placeholder = "Nhập mật khẩu ...",
+            errorMessage = passwordError
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
-                if (username.isBlank() || password.isBlank()) {
-                    errorMessage = "Vui lòng điền đầy đủ thông tin."
-                } else {
-                    errorMessage = ""
+                // Đặt lại tất cả thông báo lỗi
+                usernameError = null
+                passwordError = null
+
+                // Kiểm tra từng trường
+                var hasError = false
+                if (username.isBlank()) {
+                    usernameError = "Bạn chưa điền Tài khoản"
+                    hasError = true
+                }
+                if (password.isBlank()) {
+                    passwordError = "Bạn chưa điền Mật khẩu"
+                    hasError = true
+                }
+
+                // Nếu không có lỗi, tiếp tục đăng nhập
+                if (!hasError) {
                     keyboardController?.hide()
                     onLoginClick(username, password)
                 }
@@ -208,7 +235,6 @@ fun LoginScreen(navController: NavController? = null) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val currentDate = dateFormat.format(Date())
 
-    // Hàm tạo danh sách các tiền tố từ một chuỗi
     fun generatePrefixes(text: String): List<String> {
         val prefixes = mutableListOf<String>()
         for (i in 1..text.length) {
@@ -295,41 +321,12 @@ fun LoginScreen(navController: NavController? = null) {
                         .get()
                         .addOnSuccessListener { document ->
                             if (document.exists()) {
-                                val userData = document.data?.toMutableMap() ?: mutableMapOf()
-                                val description = userData["description"]?.toString()
-                                val needsUpdate = mutableMapOf<String, Any>()
-
-                                if (description.isNullOrEmpty()) {
-                                    needsUpdate["description"] = "Không có mô tả"
-                                }
-
-                                if (!userData.containsKey("score")) {
-                                    needsUpdate["score"] = 0
-                                }
-
-                                if (needsUpdate.isNotEmpty()) {
-                                    firestore.collection("users")
-                                        .document(userId)
-                                        .update(needsUpdate)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                                            navController?.navigate("main_screen") {
-                                                popUpTo("login") { inclusive = true }
-                                            }
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Toast.makeText(context, "Lỗi khi cập nhật dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
-                                            auth.signOut()
-                                        }
-                                } else {
-                                    Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                                    navController?.navigate("main_screen") {
-                                        popUpTo("login") { inclusive = true }
-                                    }
+                                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                                navController?.navigate("main_screen") {
+                                    popUpTo("login") { inclusive = true }
                                 }
                             } else {
-                                val user = auth.currentUser
-                                val name = user?.displayName ?: "Unknown"
+                                val name = username
                                 val nameLowercase = name.lowercase()
                                 val nameKeywords = generatePrefixes(nameLowercase)
                                 val userData = hashMapOf(
@@ -417,7 +414,7 @@ fun LoginScreen(navController: NavController? = null) {
                     }
                 },
                 onNavigateToRegister = {
-                    navController?.navigate("register") // Chuyển hướng tới màn hình đăng ký
+                    navController?.navigate("register")
                 }
             )
         }

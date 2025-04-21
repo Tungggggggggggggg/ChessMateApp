@@ -31,10 +31,11 @@ import com.example.chessmate.R
 import com.example.chessmate.ui.components.Logo
 import com.example.chessmate.ui.theme.ChessmateTheme
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
 
 @Composable
 fun RegisterScreen(navController: NavController) {
@@ -43,13 +44,123 @@ fun RegisterScreen(navController: NavController) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val coroutineScope = rememberCoroutineScope()
 
     var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isRegistering by remember { mutableStateOf(false) }// Theo dõi trạng thái đăng kí
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+    var isRegistering by remember { mutableStateOf(false) }
+
+    suspend fun checkUsernameExists(username: String): Boolean {
+        val query = firestore.collection("users")
+            .whereEqualTo("username", username)
+            .get()
+            .await()
+        return !query.isEmpty
+    }
+
+    fun handleRegister() {
+        // Đặt lại tất cả thông báo lỗi
+        nameError = null
+        usernameError = null
+        passwordError = null
+        confirmPasswordError = null
+
+        // Kiểm tra từng trường
+        var hasError = false
+        if (name.isBlank()) {
+            nameError = "Bạn chưa điền Tên"
+            hasError = true
+        }
+        if (username.isBlank()) {
+            usernameError = "Bạn chưa điền Tài khoản"
+            hasError = true
+        }
+        if (password.isBlank()) {
+            passwordError = "Bạn chưa điền Mật khẩu"
+            hasError = true
+        } else if (password.length < 6) {
+            passwordError = "Mật khẩu phải có ít nhất 6 ký tự"
+            hasError = true
+        }
+        if (confirmPassword.isBlank()) {
+            confirmPasswordError = "Bạn chưa điền Xác nhận mật khẩu"
+            hasError = true
+        }
+
+        if (!hasError) {
+            keyboardController?.hide()
+            if (password != confirmPassword) {
+                confirmPasswordError = "Mật khẩu không khớp!"
+                return
+            }
+
+            // Chạy coroutine để kiểm tra username và đăng ký
+            coroutineScope.launch {
+                try {
+                    val usernameExists = checkUsernameExists(username)
+                    if (usernameExists) {
+                        usernameError = "Tài khoản đã tồn tại"
+                        return@launch
+                    }
+
+                    // Nếu không có lỗi, tiếp tục đăng ký
+                    isRegistering = true
+                    val email = "$username@chessmate.com"
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { authtask ->
+                            if (authtask.isSuccessful) {
+                                val userId = auth.currentUser?.uid ?: run {
+                                    Toast.makeText(context, "Không thể lấy ID người dùng.", Toast.LENGTH_SHORT).show()
+                                    isRegistering = false
+                                    return@addOnCompleteListener
+                                }
+                                val createdAt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+                                val nameLowercase = name.lowercase()
+                                val nameKeywords = generatePrefixes(nameLowercase)
+                                val user = hashMapOf(
+                                    "userId" to userId,
+                                    "name" to name,
+                                    "username" to username,
+                                    "email" to email,
+                                    "createdAt" to createdAt,
+                                    "description" to "Không có mô tả",
+                                    "score" to 0,
+                                    "nameLowercase" to nameLowercase,
+                                    "nameKeywords" to nameKeywords
+                                )
+
+                                firestore.collection("users")
+                                    .document(userId)
+                                    .set(user)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
+                                        navController.navigate("login") {
+                                            popUpTo("register") { inclusive = true }
+                                        }
+                                        isRegistering = false
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Lỗi khi lưu thông tin: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        isRegistering = false
+                                        auth.currentUser?.delete()
+                                    }
+                            } else {
+                                Toast.makeText(context, authtask.exception?.message ?: "Đăng ký thất bại", Toast.LENGTH_SHORT).show()
+                                isRegistering = false
+                            }
+                        }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Lỗi khi kiểm tra tài khoản: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -78,59 +189,12 @@ fun RegisterScreen(navController: NavController) {
                 onPasswordChange = { password = it },
                 confirmPassword = confirmPassword,
                 onConfirmPasswordChange = { confirmPassword = it },
-                errorMessage = errorMessage,
+                nameError = nameError,
+                usernameError = usernameError,
+                passwordError = passwordError,
+                confirmPasswordError = confirmPasswordError,
                 isRegistering = isRegistering,
-                onRegisterClick = {
-                    keyboardController?.hide()
-                    if (password == confirmPassword) {
-                        isRegistering = true // Bắt đầu quá trình đăng ký
-                        errorMessage = null // Reset lỗi
-                        // Sử dụng username làm email giả để đăng ký với Firebase Authentication
-                        val email = "$username@chessmate.com"
-                        auth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { authtask ->
-                                if (authtask.isSuccessful) {
-                                    // Lưu thông tin user vào Firestore
-                                    val userId = auth.currentUser?.uid ?: run {
-                                        errorMessage = "Không thể lấy ID người dùng."
-                                        isRegistering = false
-                                        return@addOnCompleteListener
-                                    }
-                                    val createdAt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-                                    val user = hashMapOf(
-                                        "userId" to userId,
-                                        "name" to name,
-                                        "username" to username,
-                                        "email" to email,
-                                        "createdAt" to createdAt
-                                        // co the them trương khac
-                                    )
-
-                                    firestore.collection("users") // Tên collection là "users"
-                                        .document(userId) // Sử dụng userId làm ID của document
-                                        .set(user)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
-                                            navController.navigate("login") {
-                                                popUpTo("register") { inclusive = true }
-                                            }
-                                            isRegistering = false
-                                        }
-                                        .addOnFailureListener { e ->
-                                            errorMessage = "Lỗi khi lưu thông tin: ${e.message}"
-                                            isRegistering = false
-                                            // Nếu lưu Firestore thất bại, bạn có thể muốn xóa tài khoản Authentication vừa tạo
-                                            auth.currentUser?.delete()
-                                        }
-                                } else {
-                                    errorMessage = authtask.exception?.message
-                                    isRegistering = false
-                                }
-                            }
-                    } else {
-                        errorMessage = "Mật khẩu không khớp!"
-                    }
-                }
+                onRegisterClick = { handleRegister() }
             )
         }
     }
@@ -179,7 +243,10 @@ fun RegisterForm(
     onPasswordChange: (String) -> Unit,
     confirmPassword: String,
     onConfirmPasswordChange: (String) -> Unit,
-    errorMessage: String?,
+    nameError: String?,
+    usernameError: String?,
+    passwordError: String?,
+    confirmPasswordError: String?,
     isRegistering: Boolean,
     onRegisterClick: () -> Unit
 ) {
@@ -188,21 +255,39 @@ fun RegisterForm(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        InputField(label = "Tên", value = name, onValueChange = onNameChange)
-        InputField(label = "Tài khoản", value = username, onValueChange = onUsernameChange)
-        InputField(label = "Mật khẩu", value = password, onValueChange = onPasswordChange, isPassword = true)
-        InputField(label = "Xác nhận mật khẩu", value = confirmPassword, onValueChange = onConfirmPasswordChange, isPassword = true)
-
-        errorMessage?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error)
-        }
+        InputField(
+            label = "Tên",
+            value = name,
+            onValueChange = onNameChange,
+            errorMessage = nameError
+        )
+        InputField(
+            label = "Tài khoản",
+            value = username,
+            onValueChange = onUsernameChange,
+            errorMessage = usernameError
+        )
+        InputField(
+            label = "Mật khẩu",
+            value = password,
+            onValueChange = onPasswordChange,
+            isPassword = true,
+            errorMessage = passwordError
+        )
+        InputField(
+            label = "Xác nhận mật khẩu",
+            value = confirmPassword,
+            onValueChange = onConfirmPasswordChange,
+            isPassword = true,
+            errorMessage = confirmPasswordError
+        )
 
         Button(
             onClick = onRegisterClick,
             modifier = Modifier.fillMaxWidth(0.7f).height(50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.color_c89f9c)),
             shape = RoundedCornerShape(20.dp),
-            enabled = !isRegistering // Vô hiệu hóa nút khi đang đăng ký
+            enabled = !isRegistering
         ) {
             Text("Đăng ký", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
         }
@@ -210,13 +295,21 @@ fun RegisterForm(
 }
 
 @Composable
-fun InputField(label: String, value: String, onValueChange: (String) -> Unit, isPassword: Boolean = false) {
+fun InputField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isPassword: Boolean = false,
+    errorMessage: String? = null
+) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(text = label, fontSize = 20.sp, color = Color.Black, fontWeight = FontWeight.Bold)
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth().height(50.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
                 .background(colorResource(id = R.color.color_eee2df), shape = RoundedCornerShape(20.dp))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             singleLine = true,
@@ -230,5 +323,22 @@ fun InputField(label: String, value: String, onValueChange: (String) -> Unit, is
                 innerTextField()
             }
         )
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
     }
+}
+
+fun generatePrefixes(text: String): List<String> {
+    val prefixes = mutableListOf<String>()
+    for (i in 1..text.length) {
+        prefixes.add(text.substring(0, i))
+    }
+    return prefixes
 }
