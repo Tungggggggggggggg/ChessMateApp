@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -43,9 +42,13 @@ import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.chessmate.utils.StringUtils
 
 @Composable
 fun Header(onBackClick: () -> Unit) {
@@ -168,11 +171,9 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
 
         Button(
             onClick = {
-                // Đặt lại tất cả thông báo lỗi
                 usernameError = null
                 passwordError = null
 
-                // Kiểm tra từng trường
                 var hasError = false
                 if (username.isBlank()) {
                     usernameError = "Bạn chưa điền Tài khoản"
@@ -183,7 +184,6 @@ fun LoginForm(onLoginClick: (String, String) -> Unit, onGoogleLoginClick: () -> 
                     hasError = true
                 }
 
-                // Nếu không có lỗi, tiếp tục đăng nhập
                 if (!hasError) {
                     keyboardController?.hide()
                     onLoginClick(username, password)
@@ -231,17 +231,10 @@ fun LoginScreen(navController: NavController? = null) {
     val firestore = FirebaseFirestore.getInstance()
     val oneTapClient: SignInClient = Identity.getSignInClient(context)
     val activity = context as? Activity
+    val coroutineScope = rememberCoroutineScope()
 
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val currentDate = dateFormat.format(Date())
-
-    fun generatePrefixes(text: String): List<String> {
-        val prefixes = mutableListOf<String>()
-        for (i in 1..text.length) {
-            prefixes.add(text.substring(0, i))
-        }
-        return prefixes
-    }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -266,7 +259,7 @@ fun LoginScreen(navController: NavController? = null) {
                                         val name = user.displayName ?: "Unknown"
                                         val email = user.email ?: ""
                                         val nameLowercase = name.lowercase()
-                                        val nameKeywords = generatePrefixes(nameLowercase)
+                                        val nameKeywords = StringUtils.generateSubstrings(name)
                                         val userData = hashMapOf(
                                             "name" to name,
                                             "email" to email,
@@ -328,7 +321,7 @@ fun LoginScreen(navController: NavController? = null) {
                             } else {
                                 val name = username
                                 val nameLowercase = name.lowercase()
-                                val nameKeywords = generatePrefixes(nameLowercase)
+                                val nameKeywords = StringUtils.generateSubstrings(name)
                                 val userData = hashMapOf(
                                     "name" to name,
                                     "email" to email,

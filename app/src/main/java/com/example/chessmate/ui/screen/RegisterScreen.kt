@@ -36,6 +36,7 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.example.chessmate.utils.StringUtils
 
 @Composable
 fun RegisterScreen(navController: NavController) {
@@ -65,13 +66,11 @@ fun RegisterScreen(navController: NavController) {
     }
 
     fun handleRegister() {
-        // Đặt lại tất cả thông báo lỗi
         nameError = null
         usernameError = null
         passwordError = null
         confirmPasswordError = null
 
-        // Kiểm tra từng trường
         var hasError = false
         if (name.isBlank()) {
             nameError = "Bạn chưa điền Tên"
@@ -100,7 +99,6 @@ fun RegisterScreen(navController: NavController) {
                 return
             }
 
-            // Chạy coroutine để kiểm tra username và đăng ký
             coroutineScope.launch {
                 try {
                     val usernameExists = checkUsernameExists(username)
@@ -109,7 +107,6 @@ fun RegisterScreen(navController: NavController) {
                         return@launch
                     }
 
-                    // Nếu không có lỗi, tiếp tục đăng ký
                     isRegistering = true
                     val email = "$username@chessmate.com"
                     auth.createUserWithEmailAndPassword(email, password)
@@ -122,7 +119,7 @@ fun RegisterScreen(navController: NavController) {
                                 }
                                 val createdAt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
                                 val nameLowercase = name.lowercase()
-                                val nameKeywords = generatePrefixes(nameLowercase)
+                                val nameKeywords = StringUtils.generateSubstrings(name)
                                 val user = hashMapOf(
                                     "userId" to userId,
                                     "name" to name,
@@ -333,12 +330,4 @@ fun InputField(
             )
         }
     }
-}
-
-fun generatePrefixes(text: String): List<String> {
-    val prefixes = mutableListOf<String>()
-    for (i in 1..text.length) {
-        prefixes.add(text.substring(0, i))
-    }
-    return prefixes
 }

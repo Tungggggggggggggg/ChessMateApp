@@ -1,5 +1,6 @@
 package com.example.chessmate.ui.screen
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
@@ -43,7 +43,7 @@ import com.example.chessmate.viewmodel.ChatViewModel
 @Composable
 fun BackButton(
     onBackClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
@@ -145,10 +145,9 @@ fun FindFriendsScreen(
         viewModel.loadReceivedRequests()
         viewModel.loadSentRequests()
         viewModel.loadFriends()
-        // Xóa chatViewModel.loadFriendsWithMessages() vì đã gọi trong MainActivity
     }
 
-    val sortedSearchResults = searchResults.sortedWith(compareBy<User> {
+    val sortedSearchResults = searchResults.sortedWith(compareBy {
         when {
             friends.any { friend -> friend.userId == it.userId } -> 0
             it.userId in sentRequests -> 1
@@ -168,147 +167,187 @@ fun FindFriendsScreen(
             viewModel = chatViewModel
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .background(Color(0xFFC97C5D))
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp) // Điều chỉnh khoảng cách giữa các phần nếu cần
         ) {
-            BackButton(onBackClick = {
-                navController.navigate("main_screen") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                    launchSingleTop = true
-                }
-            })
-            Logo(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-            )
-            Spacer(modifier = Modifier.height(20.dp))
+            // BackButton
+            item {
+                BackButton(onBackClick = {
+                    navController.navigate("main_screen") {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                })
+            }
 
-            SearchBar(
-                text = searchQuery,
-                onTextChanged = { searchQuery = it },
-                onSearch = {
-                    currentSearchQuery = searchQuery
-                    viewModel.searchUsers(searchQuery)
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (isSearchEmpty && searchQuery.isNotBlank()) {
-                Text(
-                    text = "Người dùng không tồn tại!",
-                    fontSize = 16.sp,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(8.dp)
-                )
-            } else if (sortedSearchResults.isNotEmpty()) {
-                Row(
+            // Logo
+            item {
+                Logo(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { isSearchResultsExpanded = !isSearchResultsExpanded },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                        .wrapContentHeight()
+                )
+            }
+
+            // Spacer
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+
+            // SearchBar
+            item {
+                SearchBar(
+                    text = searchQuery,
+                    onTextChanged = { searchQuery = it },
+                    onSearch = {
+                        currentSearchQuery = searchQuery
+                        viewModel.searchUsers(searchQuery)
+                    }
+                )
+            }
+
+            // Spacer
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Thông báo "Người dùng không tồn tại!" hoặc phần "Kết quả tìm kiếm"
+            if (isSearchEmpty && searchQuery.isNotBlank()) {
+                item {
                     Text(
-                        text = "Kết quả tìm kiếm",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
+                        text = "Người dùng không tồn tại!",
+                        fontSize = 16.sp,
                         color = Color.White,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Expand/Collapse",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .graphicsLayer { rotationZ = if (isSearchResultsExpanded) 0f else 180f }
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(8.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                if (isSearchResultsExpanded) {
-                    LazyColumn(
+            } else if (sortedSearchResults.isNotEmpty()) {
+                item {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = (5 * 48).dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .clickable { isSearchResultsExpanded = !isSearchResultsExpanded },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(sortedSearchResults) { user ->
-                            val isFriend = friends.any { it.userId == user.userId }
-                            SearchResultItem(
-                                user = user,
-                                alreadySent = user.userId in sentRequests,
-                                onAddFriend = {
-                                    viewModel.sendFriendRequest(user.userId)
-                                    Toast.makeText(context, "Đã gửi lời mời kết bạn!", Toast.LENGTH_SHORT).show()
-                                },
-                                onCancelFriendRequest = {
-                                    viewModel.cancelFriendRequest(user.userId)
-                                    Toast.makeText(context, "Đã hủy lời mời kết bạn!", Toast.LENGTH_SHORT).show()
-                                },
-                                isFriend = isFriend,
-                                onProfileClick = {
-                                    navController.navigate("competitor_profile/${user.userId}")
-                                }
-                            )
+                        Text(
+                            text = "Kết quả tìm kiếm",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color.White,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Expand/Collapse",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .graphicsLayer { rotationZ = if (isSearchResultsExpanded) 0f else 180f }
+                        )
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (isSearchResultsExpanded) {
+                    item {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = (5 * 48).dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(sortedSearchResults) { user ->
+                                val isFriend = friends.any { it.userId == user.userId }
+                                SearchResultItem(
+                                    user = user,
+                                    alreadySent = user.userId in sentRequests,
+                                    onAddFriend = {
+                                        viewModel.sendFriendRequest(user.userId)
+                                        Toast.makeText(context, "Đã gửi lời mời kết bạn!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onCancelFriendRequest = {
+                                        viewModel.cancelFriendRequest(user.userId)
+                                        Toast.makeText(context, "Đã hủy lời mời kết bạn!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    isFriend = isFriend,
+                                    onProfileClick = {
+                                        navController.navigate("competitor_profile/${user.userId}")
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
 
+            // Phần "Lời mời kết bạn"
             if (receivedRequests.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { isFriendRequestsExpanded = !isFriendRequestsExpanded },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Lời mời kết bạn",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Expand/Collapse",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .graphicsLayer { rotationZ = if (isFriendRequestsExpanded) 0f else 180f }
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                if (isFriendRequestsExpanded) {
-                    LazyColumn(
+                item {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = (5 * 48).dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .clickable { isFriendRequestsExpanded = !isFriendRequestsExpanded },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(receivedRequests) { request ->
-                            FriendRequestItem(
-                                request = request,
-                                onAccept = {
-                                    viewModel.acceptFriendRequest(request)
-                                    Toast.makeText(context, "Đã chấp nhận lời mời!", Toast.LENGTH_SHORT).show()
-                                },
-                                onDecline = {
-                                    viewModel.declineFriendRequest(request)
-                                    Toast.makeText(context, "Đã từ chối lời mời!", Toast.LENGTH_SHORT).show()
-                                },
-                                onProfileClick = {
-                                    navController.navigate("competitor_profile/${request.fromUserId}")
-                                }
-                            )
+                        Text(
+                            text = "Lời mời kết bạn",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color.White,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Expand/Collapse",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .graphicsLayer { rotationZ = if (isFriendRequestsExpanded) 0f else 180f }
+                        )
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (isFriendRequestsExpanded) {
+                    item {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = (5 * 48).dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(receivedRequests) { request ->
+                                FriendRequestItem(
+                                    request = request,
+                                    onAccept = {
+                                        viewModel.acceptFriendRequest(request)
+                                        Toast.makeText(context, "Đã chấp nhận lời mời!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onDecline = {
+                                        viewModel.declineFriendRequest(request)
+                                        Toast.makeText(context, "Đã từ chối lời mời!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onProfileClick = {
+                                        navController.navigate("competitor_profile/${request.fromUserId}")
+                                    }
+                                )
+                            }
                         }
                     }
                 }
+            }
+
+            // Spacer cuối cùng để tạo khoảng trống
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

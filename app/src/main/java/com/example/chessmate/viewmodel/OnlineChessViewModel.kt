@@ -255,7 +255,7 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
-    private suspend fun tryMatchmaking(userId: String) {
+    private fun tryMatchmaking(userId: String) {
         matchmakingJob?.cancel()
         matchmakingJob = viewModelScope.launch {
             val timeoutSeconds = 60L

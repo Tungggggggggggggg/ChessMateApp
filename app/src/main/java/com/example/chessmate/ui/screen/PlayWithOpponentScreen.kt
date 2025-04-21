@@ -1,5 +1,6 @@
     package com.example.chessmate.ui.screen
 
+    import android.annotation.SuppressLint
     import android.widget.Toast
     import androidx.compose.foundation.background
     import androidx.compose.foundation.clickable
@@ -36,7 +37,6 @@
 
     @Composable
     fun PlayWithOpponentHeader(
-        onBackClick: () -> Unit,
         onExitConfirm: () -> Unit,
         opponentName: String,
         opponentScore: Int,
@@ -46,7 +46,7 @@
         opponentId: String?,
         friendViewModel: FindFriendsViewModel,
         onProfileClick: () -> Unit = {},
-        modifier: Modifier = Modifier
+        @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
     ) {
         var showExitDialog by remember { mutableStateOf(false) }
         val context = LocalContext.current
@@ -85,7 +85,7 @@
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.profile),
-                    contentDescription = "$opponentName",
+                    contentDescription = opponentName,
                     modifier = Modifier
                         .size(32.dp)
                         .clickable { onProfileClick() },
@@ -229,7 +229,7 @@
         playerColor: PieceColor?,
         hasUnreadMessages: Boolean,
         onChatClick: () -> Unit = {},
-        modifier: Modifier = Modifier
+        @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
     ) {
         var showDrawDialog by remember { mutableStateOf(false) }
         var showSurrenderDialog by remember { mutableStateOf(false) }
@@ -250,7 +250,7 @@
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.profile),
-                    contentDescription = "$playerName",
+                    contentDescription = playerName,
                     modifier = Modifier.size(32.dp),
                     tint = Color.Black
                 )
@@ -468,6 +468,7 @@
         }
     }
 
+    @SuppressLint("DefaultLocale")
     @Composable
     fun formatTime(seconds: Int): String {
         val minutes = seconds / 60
@@ -479,8 +480,6 @@
     fun ChatDialog(
         messages: List<ChatMessage>,
         currentUserId: String?,
-        playerName: String,
-        opponentName: String,
         opponentId: String?,
         onSendMessage: (String, String) -> Unit,
         onDismiss: () -> Unit
@@ -609,17 +608,17 @@
         var showChatDialog by remember { mutableStateOf(false) }
         var playerName by remember { mutableStateOf("Bạn") }
         var opponentName by remember { mutableStateOf("Đối thủ") }
-        var playerScore by remember { mutableStateOf(0) }
-        var opponentScore by remember { mutableStateOf(0) }
+        var playerScore by remember { mutableIntStateOf(0) }
+        var opponentScore by remember { mutableIntStateOf(0) }
         var opponentId by remember { mutableStateOf<String?>(null) }
-        val context = LocalContext.current
+        LocalContext.current
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
         val messages = chessViewModel.chatMessages // Directly use SnapshotStateList
         val hasUnreadMessages by chessViewModel.hasUnreadMessages
 
         // Lắng nghe tin nhắn khi có opponentId
         LaunchedEffect(opponentId) {
-            opponentId?.let { id ->
+            opponentId?.let {
                 chessViewModel.listenToChatMessages()
             }
         }
@@ -627,7 +626,7 @@
         // Đánh dấu tin nhắn đã đọc khi mở dialog
         LaunchedEffect(showChatDialog, opponentId) {
             if (showChatDialog) {
-                opponentId?.let { id ->
+                opponentId?.let {
                     chessViewModel.markMessagesAsRead()
                 }
             }
@@ -709,7 +708,6 @@
                 verticalArrangement = Arrangement.Top
             ) {
                 PlayWithOpponentHeader(
-                    onBackClick = onBackClick,
                     onExitConfirm = {
                         chessViewModel.surrender()
                         onBackClick()
@@ -886,10 +884,8 @@
             ChatDialog(
                 messages = messages, // Directly pass SnapshotStateList
                 currentUserId = currentUserId,
-                playerName = playerName,
-                opponentName = opponentName,
                 opponentId = opponentId,
-                onSendMessage = { id, message ->
+                onSendMessage = { _, message ->
                     chessViewModel.sendMessage(message)
                 },
                 onDismiss = { showChatDialog = false }
