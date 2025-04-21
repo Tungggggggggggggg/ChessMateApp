@@ -30,6 +30,15 @@ import com.example.chessmate.viewmodel.ChatViewModelFactory
 import android.util.Log
 import kotlinx.coroutines.delay
 
+/**
+ * Hiển thị tiêu đề của màn hình chi tiết cuộc trò chuyện.
+ *
+ * @param friendId ID của bạn bè.
+ * @param friendName Tên của bạn bè.
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ * @param navController Điều hướng đến hồ sơ đối thủ.
+ * @param modifier Modifier tùy chỉnh.
+ */
 @Composable
 fun ChatDetailHeader(
     friendId: String,
@@ -80,6 +89,12 @@ fun ChatDetailHeader(
     }
 }
 
+/**
+ * Hiển thị một tin nhắn trong cuộc trò chuyện.
+ *
+ * @param message Thông tin tin nhắn.
+ * @param isCurrentUser True nếu tin nhắn từ người dùng hiện tại.
+ */
 @Composable
 fun MessageItem(
     message: ChatMessage,
@@ -114,6 +129,14 @@ fun MessageItem(
     }
 }
 
+/**
+ * Hiển thị danh sách tin nhắn trong cuộc trò chuyện.
+ *
+ * @param messages Danh sách tin nhắn.
+ * @param currentUserId ID của người dùng hiện tại.
+ * @param modifier Modifier tùy chỉnh.
+ * @param listState Trạng thái cuộn của LazyColumn.
+ */
 @Composable
 fun ChatDetailContent(
     messages: List<ChatMessage>,
@@ -152,6 +175,14 @@ fun ChatDetailContent(
     }
 }
 
+/**
+ * Hiển thị ô nhập tin nhắn và nút gửi.
+ *
+ * @param messageText Nội dung tin nhắn.
+ * @param onMessageChange Hàm xử lý khi nội dung thay đổi.
+ * @param onSendMessage Hàm xử lý khi nhấn gửi.
+ * @param modifier Modifier tùy chỉnh.
+ */
 @Composable
 fun ChatInput(
     messageText: String,
@@ -200,6 +231,15 @@ fun ChatInput(
     }
 }
 
+/**
+ * Màn hình chi tiết cuộc trò chuyện với bạn bè.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param friendId ID của bạn bè.
+ * @param friendName Tên của bạn bè.
+ * @param viewModel ViewModel quản lý logic trò chuyện.
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ */
 @Composable
 fun ChatDetailScreen(
     navController: NavController? = null,

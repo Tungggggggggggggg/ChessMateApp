@@ -29,11 +29,18 @@ import androidx.compose.foundation.verticalScroll
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
+/**
+ * Giao diện header cho màn hình hồ sơ cá nhân, hiển thị tiêu đề và nút quay lại.
+ *
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun ProfileHeader(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Row chứa nút quay lại, tiêu đề và khoảng trống để căn chỉnh
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -42,6 +49,7 @@ fun ProfileHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(20.dp))
+        // Nút quay lại sử dụng biểu tượng từ tài nguyên drawable
         IconButton(
             onClick = onBackClick,
             modifier = Modifier.size(24.dp)
@@ -52,6 +60,7 @@ fun ProfileHeader(
                 modifier = Modifier.size(24.dp)
             )
         }
+        // Tiêu đề "Thông tin cá nhân" được căn giữa
         Text(
             text = "Thông tin cá nhân",
             fontSize = 20.sp,
@@ -65,18 +74,27 @@ fun ProfileHeader(
     }
 }
 
+/**
+ * Thành phần hiển thị một hàng thông tin có thể chỉnh sửa trong hồ sơ cá nhân.
+ *
+ * @param label Nhãn của trường thông tin (ví dụ: "Tên:").
+ * @param value Giá trị hiện tại của trường.
+ * @param onValueChange Hàm xử lý khi giá trị thay đổi.
+ */
 @Composable
 fun EditableProfileInfoRow(
     label: String,
     value: String,
     onValueChange: (String) -> Unit
 ) {
+    // Row chứa nhãn và trường nhập văn bản có thể chỉnh sửa
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Nhãn của trường thông tin, cố định độ rộng 100dp
         Text(
             text = label,
             fontSize = 20.sp,
@@ -84,6 +102,7 @@ fun EditableProfileInfoRow(
             color = Color.Black,
             modifier = Modifier.width(100.dp)
         )
+        // Trường nhập văn bản cho phép người dùng chỉnh sửa
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -96,6 +115,19 @@ fun EditableProfileInfoRow(
     }
 }
 
+/**
+ * Nội dung chính của màn hình hồ sơ cá nhân, hiển thị thông tin người dùng và các nút hành động.
+ *
+ * @param modifier Modifier tùy chỉnh giao diện.
+ * @param userData Dữ liệu người dùng từ Firestore.
+ * @param isEditing Trạng thái đang chỉnh sửa thông tin.
+ * @param description Mô tả của người dùng.
+ * @param onDescriptionChange Hàm xử lý khi mô tả thay đổi.
+ * @param onEditClick Hàm xử lý khi nhấn nút chỉnh sửa.
+ * @param onSaveClick Hàm xử lý khi nhấn nút lưu thông tin.
+ * @param onMatchHistoryClick Hàm xử lý khi nhấn nút xem lịch sử trận đấu.
+ * @param onLogoutClick Hàm xử lý khi nhấn nút đăng xuất.
+ */
 @Composable
 fun ProfileContent(
     modifier: Modifier = Modifier,
@@ -108,9 +140,12 @@ fun ProfileContent(
     onMatchHistoryClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
+    // Khởi tạo trạng thái cho tên có thể chỉnh sửa
     var editableName by remember { mutableStateOf(userData?.get("name")?.toString() ?: "") }
+    // Tạo trạng thái cuộn cho nội dung
     val scrollState = rememberScrollState()
 
+    // Column chính chứa toàn bộ nội dung hồ sơ
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -121,6 +156,7 @@ fun ProfileContent(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Spacer(modifier = Modifier.height(20.dp))
+        // Ảnh đại diện người dùng, hiển thị dạng hình tròn
         Image(
             painter = painterResource(id = R.drawable.profile),
             contentDescription = "Ảnh đại diện",
@@ -129,9 +165,11 @@ fun ProfileContent(
                 .clip(CircleShape)
         )
         Spacer(modifier = Modifier.height(20.dp))
+        // Hàng chứa các nút "Sửa thông tin" và "Đổi ảnh"
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Nút chuyển đổi giữa chế độ chỉnh sửa và lưu
             Button(
                 onClick = {
                     if (isEditing) {
@@ -151,6 +189,7 @@ fun ProfileContent(
                     fontWeight = FontWeight.Bold
                 )
             }
+            // Nút đổi ảnh, hiện chưa được triển khai
             Button(
                 onClick = { /* TODO: Xử lý đổi ảnh */ },
                 modifier = Modifier.height(50.dp),
@@ -165,9 +204,11 @@ fun ProfileContent(
                 )
             }
         }
+        // Hàng chứa các nút "Lịch sử trận đấu" và "Đăng xuất"
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Nút xem lịch sử trận đấu
             Button(
                 onClick = onMatchHistoryClick,
                 modifier = Modifier.height(50.dp),
@@ -181,6 +222,7 @@ fun ProfileContent(
                     fontWeight = FontWeight.Bold
                 )
             }
+            // Nút đăng xuất
             Button(
                 onClick = onLogoutClick,
                 modifier = Modifier.height(50.dp),
@@ -195,6 +237,7 @@ fun ProfileContent(
                 )
             }
         }
+        // Khung chứa thông tin cá nhân
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -204,6 +247,7 @@ fun ProfileContent(
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Hiển thị thông tin có thể chỉnh sửa nếu đang ở chế độ chỉnh sửa
             if (isEditing) {
                 EditableProfileInfoRow(label = "Tên:", value = editableName, onValueChange = { editableName = it })
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
@@ -213,6 +257,7 @@ fun ProfileContent(
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 ProfileInfoRow(label = "Điểm:", value = userData?.get("score")?.toString() ?: "")
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
+                // Trường nhập mô tả có thể chỉnh sửa
                 BasicTextField(
                     value = description,
                     onValueChange = onDescriptionChange,
@@ -240,6 +285,7 @@ fun ProfileContent(
                     }
                 )
             } else {
+                // Hiển thị thông tin chỉ đọc nếu không ở chế độ chỉnh sửa
                 ProfileInfoRow(label = "Tên:", value = userData?.get("name")?.toString() ?: "")
                 HorizontalDivider(color = Color.Black, thickness = 1.dp)
                 ProfileInfoRow(label = "Email:", value = FirebaseAuth.getInstance().currentUser?.email ?: "")
@@ -254,17 +300,25 @@ fun ProfileContent(
     }
 }
 
+/**
+ * Thành phần hiển thị một hàng thông tin không thể chỉnh sửa trong hồ sơ cá nhân.
+ *
+ * @param label Nhãn của trường thông tin (ví dụ: "Email:").
+ * @param value Giá trị của trường.
+ */
 @Composable
 fun ProfileInfoRow(
     label: String,
     value: String
 ) {
+    // Row chứa nhãn và giá trị thông tin chỉ đọc
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Nhãn của trường thông tin
         Text(
             text = label,
             fontSize = 20.sp,
@@ -272,6 +326,7 @@ fun ProfileInfoRow(
             color = Color.Black,
             modifier = Modifier.width(100.dp)
         )
+        // Giá trị của trường thông tin
         Text(
             text = value,
             fontSize = 20.sp,
@@ -281,6 +336,13 @@ fun ProfileInfoRow(
     }
 }
 
+/**
+ * Màn hình chính hiển thị hồ sơ cá nhân của người dùng, hỗ trợ chỉnh sửa thông tin và đăng xuất.
+ *
+ * @param navController Điều hướng để chuyển đến các màn hình khác.
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ * @param onMatchHistoryClick Hàm xử lý khi nhấn nút xem lịch sử trận đấu.
+ */
 @Composable
 fun ProfileScreen(
     navController: NavController? = null,
@@ -292,6 +354,7 @@ fun ProfileScreen(
         }
     },
 ) {
+    // Khởi tạo các biến trạng thái và tham chiếu Firebase
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     var userData by remember { mutableStateOf<Map<String, Any>?>(null) }
@@ -300,12 +363,15 @@ fun ProfileScreen(
     val context = LocalContext.current
     var isFetchingData by remember { mutableStateOf(true) }
 
+    // Biến lưu tên có thể chỉnh sửa
     var editableName by remember { mutableStateOf("") }
 
+    // Cập nhật editableName khi userData thay đổi
     LaunchedEffect(userData) {
         editableName = userData?.get("name")?.toString() ?: ""
     }
 
+    // Tải dữ liệu người dùng từ Firestore khi màn hình được tạo
     LaunchedEffect(Unit) {
         val userId = auth.currentUser?.uid
         if (userId != null) {
@@ -325,6 +391,7 @@ fun ProfileScreen(
                     isFetchingData = false
                 }
         } else {
+            // Chuyển hướng đến màn hình đăng nhập nếu chưa đăng nhập
             navController?.navigate("login") {
                 popUpTo(0) { inclusive = true }
             }
@@ -332,13 +399,17 @@ fun ProfileScreen(
         }
     }
 
+    // Giao diện chính của màn hình hồ sơ
     Column(modifier = Modifier.fillMaxSize()) {
+        // Header chứa nút quay lại và tiêu đề
         ProfileHeader(onBackClick = onBackClick)
         if (isFetchingData) {
+            // Hiển thị vòng tròn tải khi đang lấy dữ liệu
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
+            // Nội dung hồ sơ cá nhân
             ProfileContent(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 userData = userData,
@@ -355,6 +426,7 @@ fun ProfileScreen(
                         val userId = user?.uid
 
                         if (userId != null) {
+                            // Cập nhật tên nếu tên mới khác tên cũ
                             if (userData?.get("name")?.toString() != currentEditableName && currentEditableName != null) {
                                 firestore.collection("users")
                                     .document(userId)
@@ -368,6 +440,7 @@ fun ProfileScreen(
                                     }
                             }
 
+                            // Cập nhật mô tả
                             firestore.collection("users")
                                 .document(userId)
                                 .update("description", description)
@@ -383,6 +456,7 @@ fun ProfileScreen(
                 },
                 onMatchHistoryClick = onMatchHistoryClick,
                 onLogoutClick = {
+                    // Đăng xuất và chuyển hướng về màn hình chính
                     auth.signOut()
                     Toast.makeText(context, "Đăng xuất thành công!", Toast.LENGTH_SHORT).show()
                     navController?.navigate("home") {
@@ -392,13 +466,5 @@ fun ProfileScreen(
                 }
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    ChessmateTheme {
-        ProfileScreen()
     }
 }

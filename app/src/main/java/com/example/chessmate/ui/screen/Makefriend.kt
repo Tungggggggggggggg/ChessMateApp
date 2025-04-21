@@ -40,6 +40,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.graphics.graphicsLayer
 import com.example.chessmate.viewmodel.ChatViewModel
 
+/**
+ * Hiển thị nút quay lại.
+ *
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ * @param modifier Modifier tùy chỉnh.
+ */
 @Composable
 fun BackButton(
     onBackClick: () -> Unit = {},
@@ -61,6 +67,14 @@ fun BackButton(
     }
 }
 
+/**
+ * Hiển thị thanh tìm kiếm người dùng.
+ *
+ * @param text Nội dung tìm kiếm.
+ * @param onTextChanged Hàm xử lý khi nội dung thay đổi.
+ * @param onSearch Hàm xử lý khi nhấn tìm kiếm.
+ * @param modifier Modifier tùy chỉnh.
+ */
 @Composable
 fun SearchBar(
     text: String,
@@ -124,6 +138,13 @@ fun SearchBar(
     }
 }
 
+/**
+ * Màn hình tìm kiếm và quản lý bạn bè.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param viewModel ViewModel quản lý logic tìm kiếm và bạn bè.
+ * @param chatViewModel ViewModel quản lý tin nhắn.
+ */
 @Composable
 fun FindFriendsScreen(
     navController: NavController,
@@ -173,9 +194,8 @@ fun FindFriendsScreen(
                 .weight(1f)
                 .background(Color(0xFFC97C5D))
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp) // Điều chỉnh khoảng cách giữa các phần nếu cần
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            // BackButton
             item {
                 BackButton(onBackClick = {
                     navController.navigate("main_screen") {
@@ -185,7 +205,6 @@ fun FindFriendsScreen(
                 })
             }
 
-            // Logo
             item {
                 Logo(
                     modifier = Modifier
@@ -194,12 +213,10 @@ fun FindFriendsScreen(
                 )
             }
 
-            // Spacer
             item {
                 Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // SearchBar
             item {
                 SearchBar(
                     text = searchQuery,
@@ -211,12 +228,10 @@ fun FindFriendsScreen(
                 )
             }
 
-            // Spacer
             item {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Thông báo "Người dùng không tồn tại!" hoặc phần "Kết quả tìm kiếm"
             if (isSearchEmpty && searchQuery.isNotBlank()) {
                 item {
                     Text(
@@ -287,7 +302,6 @@ fun FindFriendsScreen(
                 }
             }
 
-            // Phần "Lời mời kết bạn"
             if (receivedRequests.isNotEmpty()) {
                 item {
                     Row(
@@ -345,7 +359,6 @@ fun FindFriendsScreen(
                 }
             }
 
-            // Spacer cuối cùng để tạo khoảng trống
             item {
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -353,6 +366,16 @@ fun FindFriendsScreen(
     }
 }
 
+/**
+ * Hiển thị một mục trong kết quả tìm kiếm người dùng.
+ *
+ * @param user Thông tin người dùng.
+ * @param alreadySent True nếu đã gửi lời mời kết bạn.
+ * @param onAddFriend Hàm xử lý khi nhấn nút kết bạn.
+ * @param onCancelFriendRequest Hàm xử lý khi hủy lời mời.
+ * @param isFriend True nếu đã là bạn bè.
+ * @param onProfileClick Hàm xử lý khi nhấn vào hồ sơ.
+ */
 @Composable
 fun SearchResultItem(
     user: User,
@@ -417,6 +440,14 @@ fun SearchResultItem(
     }
 }
 
+/**
+ * Hiển thị một lời mời kết bạn.
+ *
+ * @param request Thông tin lời mời.
+ * @param onAccept Hàm xử lý khi chấp nhận lời mời.
+ * @param onDecline Hàm xử lý khi từ chối lời mời.
+ * @param onProfileClick Hàm xử lý khi nhấn vào hồ sơ.
+ */
 @Composable
 fun FriendRequestItem(
     request: FriendRequest,

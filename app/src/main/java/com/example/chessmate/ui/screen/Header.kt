@@ -23,6 +23,14 @@ import androidx.navigation.NavController
 import com.example.chessmate.R
 import com.example.chessmate.viewmodel.ChatViewModel
 
+/**
+ * Hiển thị tiêu đề chung cho các màn hình, bao gồm nút tin nhắn và hồ sơ.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param modifier Modifier tùy chỉnh.
+ * @param viewModel ViewModel quản lý tin nhắn.
+ * @param centerContent Nội dung hiển thị ở giữa tiêu đề.
+ */
 @Composable
 fun Header(
     navController: NavController,
@@ -40,7 +48,6 @@ fun Header(
 ) {
     val hasUnreadMessages = viewModel.hasUnreadMessages.collectAsState()
 
-    // Gọi loadFriendsWithMessages ngay khi Header được vẽ
     LaunchedEffect(Unit) {
         viewModel.loadFriendsWithMessages()
     }
@@ -74,7 +81,7 @@ fun Header(
             }
         }
         Box(
-            modifier = Modifier.weight(1f) // Áp dụng weight cho centerContent
+            modifier = Modifier.weight(1f)
         ) {
             centerContent()
         }

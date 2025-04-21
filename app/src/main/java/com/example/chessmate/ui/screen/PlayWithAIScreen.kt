@@ -27,7 +27,13 @@ import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
 import com.example.chessmate.viewmodel.ChessViewModel
 
-
+/**
+ * Giao diện header cho màn hình chơi cờ với AI, hiển thị thông tin lượt chơi và nút thoát.
+ *
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ * @param currentTurn Màu của quân cờ hiện tại (trắng hoặc đen).
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun PlayWithAIHeader(
     onBackClick: () -> Unit,
@@ -43,6 +49,7 @@ fun PlayWithAIHeader(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
+        // Nút thoát trận đấu
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -58,6 +65,7 @@ fun PlayWithAIHeader(
                 fontWeight = FontWeight.Bold
             )
         }
+        // Thông tin AI và lượt hiện tại
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -86,6 +94,7 @@ fun PlayWithAIHeader(
         }
     }
 
+    // Dialog xác nhận thoát trận đấu
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
@@ -136,6 +145,12 @@ fun PlayWithAIHeader(
     }
 }
 
+/**
+ * Giao diện footer cho màn hình chơi cờ với AI, hiển thị thông tin người chơi và lượt hiện tại.
+ *
+ * @param currentTurn Màu của quân cờ hiện tại (trắng hoặc đen).
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun PlayWithAIFooter(
     currentTurn: PieceColor,
@@ -148,6 +163,7 @@ fun PlayWithAIFooter(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
+        // Thông tin người chơi và lượt hiện tại
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -177,6 +193,13 @@ fun PlayWithAIFooter(
     }
 }
 
+/**
+ * Màn hình chính để chơi cờ với AI, hiển thị bàn cờ, header, footer và các dialog liên quan.
+ *
+ * @param navController Điều hướng để quay lại màn hình trước đó.
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ * @param viewModel ViewModel quản lý logic trò chơi.
+ */
 @Composable
 fun PlayWithAIScreen(
     navController: NavController? = null,
@@ -185,6 +208,7 @@ fun PlayWithAIScreen(
 ) {
     val showGameOverDialog = remember { mutableStateOf(viewModel.isGameOver.value) }
 
+    // Hiển thị dialog khi trò chơi kết thúc
     if (viewModel.isGameOver.value && !showGameOverDialog.value) {
         showGameOverDialog.value = true
     }
@@ -202,10 +226,12 @@ fun PlayWithAIScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
+            // Header hiển thị thông tin AI và lượt hiện tại
             PlayWithAIHeader(
                 onBackClick = onBackClick,
                 currentTurn = viewModel.currentTurn.value
             )
+            // Bàn cờ chính
             Chessboard(
                 board = viewModel.board.value,
                 highlightedSquares = viewModel.highlightedSquares.value,
@@ -216,10 +242,12 @@ fun PlayWithAIScreen(
                     .fillMaxWidth()
                     .weight(1f)
             )
+            // Footer hiển thị thông tin người chơi và lượt hiện tại
             PlayWithAIFooter(currentTurn = viewModel.currentTurn.value)
         }
     }
 
+    // Dialog hiển thị khi cần chọn quân để phong cấp
     if (viewModel.isPromoting.value) {
         PromotionDialog(
             playerColor = viewModel.playerColor.value,
@@ -230,6 +258,7 @@ fun PlayWithAIScreen(
         )
     }
 
+    // Dialog thông báo khi trò chơi kết thúc
     if (showGameOverDialog.value) {
         AlertDialog(
             onDismissRequest = {},

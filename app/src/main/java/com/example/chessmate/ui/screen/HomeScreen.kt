@@ -20,6 +20,11 @@ import com.example.chessmate.viewmodel.ChessViewModel
 import com.example.chessmate.model.PieceColor
 import com.google.firebase.auth.FirebaseAuth
 
+/**
+ * Hiển thị hàng nút điều hướng trên màn hình chính.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ */
 @Composable
 fun ButtonRow(navController: NavController) {
     Column(
@@ -64,6 +69,12 @@ fun ButtonRow(navController: NavController) {
     }
 }
 
+/**
+ * Màn hình chính cho người dùng chưa đăng nhập, hiển thị các tùy chọn đăng nhập, đăng ký và chơi.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param viewModel ViewModel quản lý logic bàn cờ.
+ */
 @Composable
 fun HomeScreen(
     navController: NavController,

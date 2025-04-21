@@ -18,6 +18,16 @@ import androidx.compose.ui.unit.sp
 import com.example.chessmate.R
 import com.example.chessmate.model.*
 
+/**
+ * Hàm Composable hiển thị bàn cờ vua với các quân cờ và các ô được đánh dấu.
+ *
+ * @param board Ma trận 8x8 chứa các quân cờ hoặc null nếu ô trống.
+ * @param highlightedSquares Danh sách các nước đi được đánh dấu (ví dụ: các ô có thể di chuyển đến).
+ * @param onSquareClicked Hàm gọi lại khi một ô được nhấn, truyền chỉ số hàng và cột.
+ * @param playerColor Màu của người chơi (TRẮNG, ĐEN hoặc null để sử dụng góc nhìn mặc định).
+ * @param clickable Cho biết bàn cờ có thể tương tác (nhấn vào ô) hay không (mặc định là true).
+ * @param modifier Bộ điều chỉnh giao diện cho bàn cờ.
+ */
 @Composable
 fun Chessboard(
     board: Array<Array<ChessPiece?>>,
@@ -32,7 +42,7 @@ fun Chessboard(
     Column(
         modifier = modifier
             .wrapContentSize(Alignment.Center)
-            .border(5.dp, colorResource(id = R.color.color_c89f9c))
+            .border(5.dp, colorResource(id = R.color.color_c89f9c)) // Viền bàn cờ
             .padding(5.dp)
     ) {
         // Nhãn cột (A-H hoặc H-A)
@@ -41,7 +51,7 @@ fun Chessboard(
                 .size(width = 360.dp, height = 20.dp)
                 .background(colorResource(id = R.color.color_c89f9c))
         ) {
-            Box(modifier = Modifier.size(width = 20.dp, height = 20.dp))
+            Box(modifier = Modifier.size(width = 20.dp, height = 20.dp)) // Ô trống góc
             val cols = if (isWhitePerspective) ('A'..'H') else ('H' downTo 'A')
             cols.forEach { letter ->
                 Box(
@@ -57,7 +67,7 @@ fun Chessboard(
                     )
                 }
             }
-            Box(modifier = Modifier.size(width = 20.dp, height = 20.dp))
+            Box(modifier = Modifier.size(width = 20.dp, height = 20.dp)) // Ô trống góc
         }
 
         // Bàn cờ
@@ -185,6 +195,12 @@ fun Chessboard(
     }
 }
 
+/**
+ * Trả về tài nguyên hình ảnh tương ứng với một quân cờ.
+ *
+ * @param piece Quân cờ cần lấy hình ảnh.
+ * @return ID tài nguyên hình ảnh cho quân cờ.
+ */
 @Composable
 fun getPieceDrawable(piece: ChessPiece): Int {
     return when (piece.type) {

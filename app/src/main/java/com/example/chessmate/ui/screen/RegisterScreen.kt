@@ -38,6 +38,11 @@ import java.util.Date
 import java.util.Locale
 import com.example.chessmate.utils.StringUtils
 
+/**
+ * Màn hình chính để đăng ký tài khoản mới.
+ *
+ * @param navController Điều hướng để quay lại màn hình trước hoặc chuyển đến màn hình đăng nhập.
+ */
 @Composable
 fun RegisterScreen(navController: NavController) {
     val auth = FirebaseAuth.getInstance()
@@ -57,6 +62,12 @@ fun RegisterScreen(navController: NavController) {
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
     var isRegistering by remember { mutableStateOf(false) }
 
+    /**
+     * Kiểm tra xem tên tài khoản đã tồn tại trong Firestore hay chưa.
+     *
+     * @param username Tên tài khoản cần kiểm tra.
+     * @return True nếu tài khoản đã tồn tại, False nếu chưa.
+     */
     suspend fun checkUsernameExists(username: String): Boolean {
         val query = firestore.collection("users")
             .whereEqualTo("username", username)
@@ -65,6 +76,9 @@ fun RegisterScreen(navController: NavController) {
         return !query.isEmpty
     }
 
+    /**
+     * Xử lý logic đăng ký tài khoản mới.
+     */
     fun handleRegister() {
         nameError = null
         usernameError = null
@@ -165,6 +179,7 @@ fun RegisterScreen(navController: NavController) {
             .windowInsetsPadding(WindowInsets.ime)
             .navigationBarsPadding()
     ) {
+        // Header hiển thị tiêu đề và nút quay lại
         RegisterHeader(onBackClick = { navController.popBackStack() })
         Column(
             modifier = Modifier
@@ -175,8 +190,10 @@ fun RegisterScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
+            // Logo ứng dụng
             Logo(modifier = Modifier.fillMaxWidth().wrapContentHeight())
             Spacer(modifier = Modifier.height(20.dp))
+            // Form đăng ký
             RegisterForm(
                 name = name,
                 onNameChange = { name = it },
@@ -197,6 +214,11 @@ fun RegisterScreen(navController: NavController) {
     }
 }
 
+/**
+ * Giao diện header cho màn hình đăng ký, hiển thị tiêu đề và nút quay lại.
+ *
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ */
 @Composable
 fun RegisterHeader(onBackClick: () -> Unit) {
     Row(
@@ -207,6 +229,7 @@ fun RegisterHeader(onBackClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(20.dp))
+        // Nút quay lại
         IconButton(
             onClick = onBackClick,
             modifier = Modifier.size(24.dp)
@@ -217,6 +240,7 @@ fun RegisterHeader(onBackClick: () -> Unit) {
                 modifier = Modifier.size(24.dp)
             )
         }
+        // Tiêu đề đăng ký
         Text(
             text = "Đăng kí",
             fontSize = 20.sp,
@@ -230,6 +254,24 @@ fun RegisterHeader(onBackClick: () -> Unit) {
     }
 }
 
+/**
+ * Form nhập thông tin đăng ký, bao gồm tên, tài khoản, mật khẩu và xác nhận mật khẩu.
+ *
+ * @param name Tên người dùng.
+ * @param onNameChange Hàm xử lý khi tên thay đổi.
+ * @param username Tên tài khoản.
+ * @param onUsernameChange Hàm xử lý khi tên tài khoản thay đổi.
+ * @param password Mật khẩu.
+ * @param onPasswordChange Hàm xử lý khi mật khẩu thay đổi.
+ * @param confirmPassword Xác nhận mật khẩu.
+ * @param onConfirmPasswordChange Hàm xử lý khi xác nhận mật khẩu thay đổi.
+ * @param nameError Thông báo lỗi cho tên.
+ * @param usernameError Thông báo lỗi cho tài khoản.
+ * @param passwordError Thông báo lỗi cho mật khẩu.
+ * @param confirmPasswordError Thông báo lỗi cho xác nhận mật khẩu.
+ * @param isRegistering Trạng thái đang đăng ký.
+ * @param onRegisterClick Hàm xử lý khi nhấn nút đăng ký.
+ */
 @Composable
 fun RegisterForm(
     name: String,
@@ -252,18 +294,21 @@ fun RegisterForm(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Trường nhập tên
         InputField(
             label = "Tên",
             value = name,
             onValueChange = onNameChange,
             errorMessage = nameError
         )
+        // Trường nhập tài khoản
         InputField(
             label = "Tài khoản",
             value = username,
             onValueChange = onUsernameChange,
             errorMessage = usernameError
         )
+        // Trường nhập mật khẩu
         InputField(
             label = "Mật khẩu",
             value = password,
@@ -271,6 +316,7 @@ fun RegisterForm(
             isPassword = true,
             errorMessage = passwordError
         )
+        // Trường nhập xác nhận mật khẩu
         InputField(
             label = "Xác nhận mật khẩu",
             value = confirmPassword,
@@ -279,6 +325,7 @@ fun RegisterForm(
             errorMessage = confirmPasswordError
         )
 
+        // Nút đăng ký
         Button(
             onClick = onRegisterClick,
             modifier = Modifier.fillMaxWidth(0.7f).height(50.dp),
@@ -291,6 +338,15 @@ fun RegisterForm(
     }
 }
 
+/**
+ * Thành phần nhập liệu cho các trường trong form đăng ký.
+ *
+ * @param label Nhãn của trường nhập liệu.
+ * @param value Giá trị hiện tại của trường.
+ * @param onValueChange Hàm xử lý khi giá trị thay đổi.
+ * @param isPassword Xác định trường có phải là mật khẩu hay không.
+ * @param errorMessage Thông báo lỗi nếu có.
+ */
 @Composable
 fun InputField(
     label: String,

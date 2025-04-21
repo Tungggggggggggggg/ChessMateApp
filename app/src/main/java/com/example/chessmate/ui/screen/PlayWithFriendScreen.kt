@@ -28,6 +28,14 @@ import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
 import com.example.chessmate.viewmodel.FriendChessViewModel
 
+/**
+ * Giao diện header cho màn hình chơi cờ với bạn bè, hiển thị thông tin lượt chơi, thời gian và nút thoát.
+ *
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ * @param currentTurn Màu của quân cờ hiện tại (trắng hoặc đen).
+ * @param time Thời gian còn lại của người chơi (tính bằng giây).
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun PlayWithFriendHeader(
     onBackClick: () -> Unit,
@@ -44,6 +52,7 @@ fun PlayWithFriendHeader(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
+        // Nút thoát trận đấu
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -59,6 +68,7 @@ fun PlayWithFriendHeader(
                 fontWeight = FontWeight.Bold
             )
         }
+        // Thông tin người chơi và lượt hiện tại
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -85,6 +95,7 @@ fun PlayWithFriendHeader(
                 color = Color.Black
             )
         }
+        // Hiển thị thời gian còn lại
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -104,6 +115,7 @@ fun PlayWithFriendHeader(
         }
     }
 
+    // Dialog xác nhận thoát trận đấu
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
@@ -154,6 +166,13 @@ fun PlayWithFriendHeader(
     }
 }
 
+/**
+ * Giao diện footer cho màn hình chơi cờ với bạn bè, hiển thị thông tin người chơi và lượt hiện tại.
+ *
+ * @param currentTurn Màu của quân cờ hiện tại (trắng hoặc đen).
+ * @param time Thời gian còn lại của người chơi (tính bằng giây).
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun PlayWithFriendFooter(
     currentTurn: PieceColor,
@@ -167,6 +186,7 @@ fun PlayWithFriendFooter(
             .padding(horizontal = 20.dp, vertical = 10.dp)
             .height(108.dp)
     ) {
+        // Thông tin người chơi và lượt hiện tại
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -193,6 +213,7 @@ fun PlayWithFriendFooter(
                 color = Color.Black
             )
         }
+        // Hiển thị thời gian còn lại
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -213,6 +234,13 @@ fun PlayWithFriendFooter(
     }
 }
 
+/**
+ * Màn hình chính để chơi cờ với bạn bè, hiển thị bàn cờ, header, footer và các dialog liên quan.
+ *
+ * @param navController Điều hướng để quay lại màn hình trước đó.
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ * @param viewModel ViewModel quản lý logic trò chơi.
+ */
 @Composable
 fun PlayWithFriendScreen(
     navController: NavController? = null,
@@ -221,6 +249,7 @@ fun PlayWithFriendScreen(
 ) {
     val showGameOverDialog = remember { mutableStateOf(false) }
 
+    // Hiển thị dialog khi trò chơi kết thúc
     if (viewModel.isGameOver.value && !showGameOverDialog.value) {
         showGameOverDialog.value = true
     }
@@ -238,11 +267,13 @@ fun PlayWithFriendScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
+            // Header hiển thị thông tin người chơi và thời gian
             PlayWithFriendHeader(
                 onBackClick = onBackClick,
                 currentTurn = viewModel.currentTurn.value,
                 time = viewModel.blackTime.value
             )
+            // Bàn cờ chính
             Chessboard(
                 board = viewModel.board.value,
                 highlightedSquares = viewModel.highlightedSquares.value,
@@ -253,6 +284,7 @@ fun PlayWithFriendScreen(
                     .fillMaxWidth()
                     .weight(1f)
             )
+            // Footer hiển thị thông tin người chơi và thời gian
             PlayWithFriendFooter(
                 currentTurn = viewModel.currentTurn.value,
                 time = viewModel.whiteTime.value
@@ -260,6 +292,7 @@ fun PlayWithFriendScreen(
         }
     }
 
+    // Dialog hiển thị khi cần chọn quân để phong cấp
     if (viewModel.isPromoting.value) {
         PromotionDialog(
             playerColor = viewModel.playerColor.value,
@@ -270,6 +303,7 @@ fun PlayWithFriendScreen(
         )
     }
 
+    // Dialog thông báo khi trò chơi kết thúc
     if (showGameOverDialog.value) {
         AlertDialog(
             onDismissRequest = {},

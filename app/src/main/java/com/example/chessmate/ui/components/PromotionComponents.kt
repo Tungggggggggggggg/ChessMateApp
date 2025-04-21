@@ -17,6 +17,13 @@ import com.example.chessmate.R
 import com.example.chessmate.model.PieceColor
 import com.example.chessmate.model.PieceType
 
+/**
+ * Hàm Composable hiển thị hộp thoại để người chơi chọn quân cờ phong cấp khi Tốt đạt hàng cuối.
+ *
+ * @param playerColor Màu của người chơi (TRẮNG hoặc ĐEN).
+ * @param onSelect Hàm gọi lại khi một loại quân cờ được chọn.
+ * @param onDismiss Hàm gọi lại khi hộp thoại bị đóng.
+ */
 @Composable
 fun PromotionDialog(
     playerColor: PieceColor,
@@ -83,6 +90,14 @@ fun PromotionDialog(
     )
 }
 
+/**
+ * Hàm Composable tạo nút hiển thị một lựa chọn phong cấp với biểu tượng và tên quân cờ.
+ *
+ * @param pieceType Loại quân cờ để phong cấp (Hậu, Tượng, Mã, Xe).
+ * @param playerColor Màu của người chơi (TRẮNG hoặc ĐEN).
+ * @param onSelect Hàm gọi lại khi nút được nhấn.
+ * @param modifier Bộ điều chỉnh giao diện cho nút.
+ */
 @Composable
 fun PromotionButton(
     pieceType: PieceType,

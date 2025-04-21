@@ -29,6 +29,12 @@ import com.example.chessmate.viewmodel.FindFriendsViewModel
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 
+/**
+ * Hiển thị tiêu đề của màn hình hồ sơ đối thủ.
+ *
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ * @param modifier Modifier tùy chỉnh.
+ */
 @Composable
 fun CompetitorProfileHeader(
     onBackClick: () -> Unit,
@@ -65,8 +71,18 @@ fun CompetitorProfileHeader(
     }
 }
 
-
-
+/**
+ * Hiển thị nội dung hồ sơ của đối thủ.
+ *
+ * @param modifier Modifier tùy chỉnh.
+ * @param userData Dữ liệu người dùng từ Firestore.
+ * @param onMatchHistoryClick Hàm xử lý khi nhấn nút lịch sử trận đấu.
+ * @param onAddFriendClick Hàm xử lý khi nhấn nút kết bạn.
+ * @param onCancelFriendRequestClick Hàm xử lý khi hủy lời mời kết bạn.
+ * @param onRemoveFriendClick Hàm xử lý khi xóa bạn.
+ * @param isFriendRequestSent True nếu đã gửi lời mời kết bạn.
+ * @param isFriend True nếu đã là bạn bè.
+ */
 @Composable
 fun CompetitorProfileContent(
     modifier: Modifier = Modifier,
@@ -170,6 +186,15 @@ fun CompetitorProfileContent(
     }
 }
 
+/**
+ * Màn hình hiển thị hồ sơ của đối thủ.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param opponentId ID của đối thủ.
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ * @param onMatchHistoryClick Hàm xử lý khi nhấn nút lịch sử trận đấu.
+ * @param friendViewModel ViewModel quản lý danh sách bạn bè.
+ */
 @Composable
 fun CompetitorProfileScreen(
     navController: NavController? = null,
@@ -188,14 +213,10 @@ fun CompetitorProfileScreen(
     val friends by friendViewModel.friends.collectAsState()
     val isFriendRequestSent = opponentId in sentRequests
     val isFriend = friends.any { it.userId == opponentId }
-
-    // Trạng thái để hiển thị AlertDialog
     var showRemoveFriendDialog by remember { mutableStateOf(false) }
 
-    // Tải dữ liệu ban đầu
     LaunchedEffect(opponentId) {
         if (opponentId.isNotEmpty()) {
-            // Tải thông tin người dùng từ Firestore
             Firebase.firestore.collection("users")
                 .document(opponentId)
                 .get()
@@ -208,13 +229,11 @@ fun CompetitorProfileScreen(
                     Toast.makeText(context, "Lỗi khi tải thông tin đối thủ!", Toast.LENGTH_SHORT).show()
                 }
 
-            // Tải danh sách bạn bè và lời mời đã gửi
             friendViewModel.loadSentRequests()
             friendViewModel.loadFriends()
         }
     }
 
-    // AlertDialog xác nhận xóa bạn bè
     if (showRemoveFriendDialog) {
         AlertDialog(
             onDismissRequest = { showRemoveFriendDialog = false },
@@ -286,19 +305,10 @@ fun CompetitorProfileScreen(
                 Toast.makeText(context, "Đã hủy lời mời kết bạn!", Toast.LENGTH_SHORT).show()
             },
             onRemoveFriendClick = {
-                // Hiển thị dialog xác nhận thay vì xóa ngay lập tức
                 showRemoveFriendDialog = true
             },
             isFriendRequestSent = isFriendRequestSent,
             isFriend = isFriend
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CompetitorProfilePreview() {
-    ChessmateTheme {
-        CompetitorProfileScreen()
     }
 }

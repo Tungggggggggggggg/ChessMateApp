@@ -14,7 +14,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 
-// Tạo nút với văn bản và màu nền tùy chỉnh
+/**
+ * Hàm Composable tạo một nút tùy chỉnh với văn bản và màu nền.
+ *
+ * @param text Văn bản hiển thị trên nút.
+ * @param colorId ID tài nguyên màu cho nền nút.
+ * @param onClick Hàm gọi lại khi nút được nhấn (mặc định là hàm rỗng).
+ */
 @Composable
 fun ButtonItem(
     text: String,
@@ -26,7 +32,7 @@ fun ButtonItem(
         modifier = Modifier
             .width(120.dp)
             .height(45.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(12.dp), // Bo góc nút
         colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = colorId))
     ) {
         Text(

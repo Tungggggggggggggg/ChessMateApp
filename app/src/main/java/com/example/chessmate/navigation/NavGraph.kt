@@ -12,17 +12,29 @@ import com.example.chessmate.ui.screen.*
 import com.example.chessmate.viewmodel.ChatViewModel
 import java.net.URLDecoder
 
+/**
+ * Hàm Composable định nghĩa biểu đồ điều hướng cho ứng dụng, quản lý các màn hình và chuyển đổi giữa chúng.
+ *
+ * @param navController Bộ điều khiển điều hướng để quản lý các chuyển đổi màn hình.
+ * @param startDestination Điểm bắt đầu của điều hướng (mặc định là "home").
+ * @param chatViewModel ViewModel để quản lý logic trò chuyện, được truyền từ MainActivity.
+ */
 @Composable
 fun NavGraph(
     navController: NavHostController,
     startDestination: String = "home",
-    chatViewModel: ChatViewModel // Nhận ChatViewModel từ MainActivity
+    chatViewModel: ChatViewModel
 ) {
     NavHost(navController = navController, startDestination = startDestination) {
+        // Màn hình chính (Home)
         composable("home") { HomeScreen(navController) }
+        // Màn hình đăng nhập
         composable("login") { LoginScreen(navController) }
+        // Màn hình đăng ký
         composable("register") { RegisterScreen(navController) }
+        // Màn hình hồ sơ người dùng
         composable("profile") { ProfileScreen(navController) }
+        // Màn hình tìm kiếm bạn bè
         composable("find_friends") {
             FindFriendsScreen(
                 navController = navController,
@@ -30,8 +42,11 @@ fun NavGraph(
                 chatViewModel = chatViewModel
             )
         }
+        // Màn hình tải (loading)
         composable("loading") { LoadingScreen(navController = navController) }
+        // Màn hình đặt lại mật khẩu
         composable("reset_password") { ResetPasswordScreen(navController) }
+        // Màn hình chính sau khi đăng nhập
         composable("main_screen") {
             MainScreen(
                 navController = navController,
@@ -40,6 +55,7 @@ fun NavGraph(
                 chatViewModel = chatViewModel
             )
         }
+        // Màn hình lịch sử trận đấu của người dùng
         composable(
             route = "match_history/{userId}",
             arguments = listOf(navArgument("userId") { type = NavType.StringType })
@@ -50,6 +66,7 @@ fun NavGraph(
                 userId = userId
             )
         }
+        // Màn hình danh sách trò chuyện
         composable("chat") {
             ChatScreen(
                 navController = navController,
@@ -57,6 +74,7 @@ fun NavGraph(
                 onBackClick = { navController.popBackStack() }
             )
         }
+        // Màn hình chi tiết trò chuyện với một người bạn
         composable(
             route = "chat_detail/{friendId}/{friendName}",
             arguments = listOf(
@@ -75,8 +93,11 @@ fun NavGraph(
                 viewModel = chatViewModel
             )
         }
+        // Màn hình chơi cờ với AI
         composable("play_with_ai") { PlayWithAIScreen(navController) }
+        // Màn hình chơi cờ với bạn bè
         composable("play_with_friend") { PlayWithFriendScreen(navController) }
+        // Màn hình chơi cờ với đối thủ (hỗ trợ deep link)
         composable(
             route = "play_with_opponent/{matchId}",
             deepLinks = listOf(
@@ -89,6 +110,7 @@ fun NavGraph(
                 matchId = matchId
             )
         }
+        // Màn hình hồ sơ của đối thủ
         composable(
             route = "competitor_profile/{opponentId}",
             arguments = listOf(navArgument("opponentId") { type = NavType.StringType })

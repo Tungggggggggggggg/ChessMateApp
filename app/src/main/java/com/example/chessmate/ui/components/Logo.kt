@@ -9,6 +9,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import com.example.chessmate.R
 
+/**
+ * Hàm Composable hiển thị logo của ứng dụng Chessmate.
+ *
+ * @param modifier Bộ điều chỉnh giao diện cho logo.
+ */
 @Composable
 fun Logo(modifier: Modifier = Modifier) {
     // Hiển thị logo và tiêu đề của ứng dụng

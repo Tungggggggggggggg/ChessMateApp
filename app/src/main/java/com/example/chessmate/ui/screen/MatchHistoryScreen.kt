@@ -28,6 +28,12 @@ import android.widget.Toast
 import java.text.SimpleDateFormat
 import java.util.Locale
 
+/**
+ * Giao diện header cho màn hình lịch sử trận đấu, hiển thị tiêu đề và nút quay lại.
+ *
+ * @param onBackClick Hàm xử lý khi người dùng nhấn nút quay lại.
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun MatchHistoryHeader(
     onBackClick: () -> Unit,
@@ -41,6 +47,7 @@ fun MatchHistoryHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(20.dp))
+        // Nút quay lại
         IconButton(
             onClick = onBackClick,
             modifier = Modifier.size(24.dp)
@@ -51,6 +58,7 @@ fun MatchHistoryHeader(
                 modifier = Modifier.size(24.dp)
             )
         }
+        // Tiêu đề lịch sử trận đấu
         Text(
             text = "Lịch sử trận đấu",
             fontSize = 20.sp,
@@ -64,6 +72,12 @@ fun MatchHistoryHeader(
     }
 }
 
+/**
+ * Giao diện hiển thị một hàng trong danh sách lịch sử trận đấu, bao gồm thông tin đối thủ, kết quả và thời gian.
+ *
+ * @param match Thông tin trận đấu cần hiển thị.
+ * @param modifier Modifier tùy chỉnh giao diện.
+ */
 @Composable
 fun MatchHistoryRow(
     match: Match,
@@ -92,11 +106,11 @@ fun MatchHistoryRow(
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Ký hiệu W, L, D
+        // Hiển thị ký hiệu kết quả (W, L, D)
         Box(
             modifier = Modifier
                 .width(40.dp)
-                .fillMaxHeight() // Kéo dài hết chiều cao của hàng
+                .fillMaxHeight()
                 .background(
                     when (match.result) {
                         "Thắng" -> colorResource(id = R.color.win_indicator)
@@ -118,7 +132,7 @@ fun MatchHistoryRow(
             )
         }
 
-        // Ảnh đại diện
+        // Ảnh đại diện đối thủ
         Image(
             painter = painterResource(id = R.drawable.profile),
             contentDescription = "Ảnh đại diện đối thủ",
@@ -143,7 +157,7 @@ fun MatchHistoryRow(
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
-            // Số bước và giờ ngày
+            // Số bước và thời gian
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -162,6 +176,14 @@ fun MatchHistoryRow(
     }
 }
 
+/**
+ * Giao diện nội dung chính của màn hình lịch sử trận đấu, hiển thị danh sách các trận đấu hoặc trạng thái tải.
+ *
+ * @param modifier Modifier tùy chỉnh giao diện.
+ * @param matches Danh sách các trận đấu cần hiển thị.
+ * @param isLoading Trạng thái đang tải dữ liệu.
+ * @param error Thông báo lỗi nếu có.
+ */
 @Composable
 fun MatchHistoryContent(
     modifier: Modifier = Modifier,
@@ -171,6 +193,7 @@ fun MatchHistoryContent(
 ) {
     val context = LocalContext.current
 
+    // Hiển thị thông báo lỗi nếu có
     LaunchedEffect(error) {
         error?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -183,6 +206,7 @@ fun MatchHistoryContent(
             .background(colorResource(id = R.color.color_c97c5d))
     ) {
         if (isLoading) {
+            // Hiển thị vòng tròn tải khi đang lấy dữ liệu
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -191,6 +215,7 @@ fun MatchHistoryContent(
                 CircularProgressIndicator()
             }
         } else if (matches.isEmpty()) {
+            // Hiển thị thông báo khi không có lịch sử trận đấu
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -203,6 +228,7 @@ fun MatchHistoryContent(
                 )
             }
         } else {
+            // Hiển thị danh sách các trận đấu
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -216,20 +242,30 @@ fun MatchHistoryContent(
     }
 }
 
+/**
+ * Màn hình chính hiển thị lịch sử các trận đấu của người dùng.
+ *
+ * @param navController Điều hướng để quay lại màn hình trước đó.
+ * @param userId ID của người dùng để lấy lịch sử trận đấu.
+ * @param viewModel ViewModel quản lý logic lịch sử trận đấu.
+ */
 @Composable
 fun MatchHistoryScreen(
     navController: NavController? = null,
     userId: String,
     viewModel: MatchHistoryViewModel = viewModel()
 ) {
+    // Tải lịch sử trận đấu khi userId thay đổi
     LaunchedEffect(userId) {
         viewModel.loadMatchHistory(userId)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Header hiển thị tiêu đề và nút quay lại
         MatchHistoryHeader(
             onBackClick = { navController?.popBackStack() }
         )
+        // Nội dung danh sách lịch sử trận đấu
         MatchHistoryContent(
             modifier = Modifier
                 .fillMaxWidth()

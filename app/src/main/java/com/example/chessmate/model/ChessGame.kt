@@ -1,14 +1,34 @@
 package com.example.chessmate.model
 
+/**
+ * Lớp đại diện cho một ván cờ vua, quản lý trạng thái trò chơi, bàn cờ và các quy tắc.
+ */
 class ChessGame {
+    // Bàn cờ 8x8, mỗi ô có thể chứa một ChessPiece hoặc null
     private var board: Array<Array<ChessPiece?>> = Array(8) { Array(8) { null } }
+
+    // Theo dõi lượt đi hiện tại (TRẮNG hoặc ĐEN)
     private var currentTurn: PieceColor = PieceColor.WHITE
+
+    // Quân cờ hiện đang được chọn để thực hiện nước đi
     private var selectedPiece: ChessPiece? = null
+
+    // Danh sách các vị trí đích hợp lệ cho quân cờ được chọn
     private var validMoves: List<Position> = emptyList()
+
+    // Cho biết ván cờ đã kết thúc hay chưa
     private var isGameOver: Boolean = false
+
+    // Lưu trữ kết quả của ván cờ (ví dụ: "Trắng thắng", "Hòa")
     private var gameResult: String? = null
+
+    // Lưu trữ nước đi cuối cùng dưới dạng cặp vị trí từ và đến
     private var lastMove: Pair<Position, Position>? = null
+
+    // Theo dõi nếu một quân Tốt đang chờ được phong cấp (ví dụ: khi nó đến hàng cuối của đối thủ)
     private var pendingPromotion: Position? = null
+
+    // Theo dõi các quân cờ đã di chuyển hay chưa (dùng cho nhập thành và các quy tắc khác)
     private val hasMoved: MutableMap<String, Boolean> = mutableMapOf(
         "white_king" to false,
         "white_kingside_rook" to false,
@@ -17,19 +37,39 @@ class ChessGame {
         "black_kingside_rook" to false,
         "black_queenside_rook" to false
     )
+
+    // Theo dõi vị trí của Vua trắng
     private var whiteKingPosition: Position = Position(0, 4)
+
+    // Theo dõi vị trí của Vua đen
     private var blackKingPosition: Position = Position(7, 4)
+
+    // Bộ đếm cho luật 50 nước (hòa nếu không có nước đi Tốt hoặc ăn quân trong 50 nước)
     private var fiftyMoveCounter: Int = 0
+
+    // Theo dõi các trạng thái bàn cờ để phát hiện lặp lại ba lần cho điều kiện hòa
     private val positionHistory: MutableMap<String, Int> = mutableMapOf()
 
+    /**
+     * Khởi tạo ván cờ bằng cách thiết lập bàn cờ và lưu trạng thái ban đầu.
+     */
     init {
         initializeBoard()
         saveBoardState()
     }
 
+    /**
+     * Trả về nước đi cuối cùng được thực hiện trong ván cờ.
+     *
+     * @return Cặp vị trí từ và đến, hoặc null nếu chưa có nước đi nào.
+     */
     fun getLastMove(): Pair<Position, Position>? = lastMove
 
+    /**
+     * Thiết lập bàn cờ ban đầu với các quân cờ ở vị trí bắt đầu.
+     */
     private fun initializeBoard() {
+        // Đặt các quân cờ Trắng
         board[0][0] = ChessPiece(PieceType.ROOK, PieceColor.WHITE, Position(0, 0))
         board[0][1] = ChessPiece(PieceType.KNIGHT, PieceColor.WHITE, Position(0, 1))
         board[0][2] = ChessPiece(PieceType.BISHOP, PieceColor.WHITE, Position(0, 2))
@@ -42,6 +82,7 @@ class ChessGame {
             board[1][col] = ChessPiece(PieceType.PAWN, PieceColor.WHITE, Position(1, col))
         }
 
+        // Đặt các quân cờ Đen
         board[7][0] = ChessPiece(PieceType.ROOK, PieceColor.BLACK, Position(7, 0))
         board[7][1] = ChessPiece(PieceType.KNIGHT, PieceColor.BLACK, Position(7, 1))
         board[7][2] = ChessPiece(PieceType.BISHOP, PieceColor.BLACK, Position(7, 2))
@@ -55,8 +96,22 @@ class ChessGame {
         }
     }
 
+    /**
+     * Lấy quân cờ tại vị trí được chỉ định.
+     *
+     * @param row Chỉ số hàng (0 đến 7).
+     * @param col Chỉ số cột (0 đến 7).
+     * @return Quân cờ tại vị trí đó, hoặc null nếu vị trí trống.
+     */
     fun getPieceAt(row: Int, col: Int): ChessPiece? = board[row][col]
 
+    /**
+     * Chọn một quân cờ tại vị trí được chỉ định và trả về danh sách các nước đi hợp lệ.
+     *
+     * @param row Chỉ số hàng của quân cờ.
+     * @param col Chỉ số cột của quân cờ.
+     * @return Danh sách các nước đi hợp lệ cho quân cờ được chọn.
+     */
     fun selectPiece(row: Int, col: Int): List<Move> {
         val piece = board[row][col] ?: return emptyList()
         if (piece.color != currentTurn) return emptyList()
@@ -66,6 +121,12 @@ class ChessGame {
         return moves
     }
 
+    /**
+     * Di chuyển quân cờ được chọn đến vị trí đích.
+     *
+     * @param to Vị trí đích của nước đi.
+     * @return True nếu nước đi thành công, false nếu không hợp lệ.
+     */
     fun movePiece(to: Position): Boolean {
         val piece = selectedPiece ?: return false
         val validMove = calculateValidMoves(piece).find { it.position == to } ?: return false
@@ -75,6 +136,7 @@ class ChessGame {
 
         val from = piece.position
 
+        // Xử lý phong cấp cho Tốt
         if (piece.type == PieceType.PAWN && (to.row == 7 || to.row == 0)) {
             board[to.row][to.col] = piece.copy(position = to)
             board[from.row][from.col] = null
@@ -84,6 +146,7 @@ class ChessGame {
             return true
         }
 
+        // Kiểm tra nước đi bắt Tốt qua đường (en passant)
         val isEnPassant = piece.type == PieceType.PAWN && targetPiece == null &&
                 to.col != piece.position.col && lastMove?.let { last ->
             last.second.row == piece.position.row &&
@@ -93,20 +156,24 @@ class ChessGame {
                     kotlin.math.abs(last.first.row - last.second.row) == 2
         } == true
 
+        // Kiểm tra nước đi nhập thành
         val isCastling = piece.type == PieceType.KING && kotlin.math.abs(to.col - piece.position.col) == 2
         val rookCol = if (to.col > piece.position.col) 7 else 0
         val rookNewCol = if (to.col > piece.position.col) 5 else 3
         val row = piece.position.row
 
+        // Cập nhật bàn cờ
         board[to.row][to.col] = piece.copy(position = to)
         board[from.row][from.col] = null
 
+        // Xử lý bắt Tốt qua đường
         if (isEnPassant) {
             lastMove?.let { last ->
                 board[last.second.row][last.second.col] = null
             }
         }
 
+        // Xử lý nhập thành
         if (isCastling) {
             val rook = board[row][rookCol]
             if (rook != null) {
@@ -115,6 +182,7 @@ class ChessGame {
             }
         }
 
+        // Cập nhật trạng thái di chuyển của Vua và Xe
         if (piece.type == PieceType.KING) {
             hasMoved["${piece.color}_king"] = true
             updateKingPosition(piece.color, to)
@@ -124,6 +192,7 @@ class ChessGame {
             if (from.col == 7) hasMoved["${piece.color}_kingside_rook"] = true
         }
 
+        // Cập nhật bộ đếm 50 nước
         if (piece.type == PieceType.PAWN || targetPiece != null || isEnPassant) {
             fiftyMoveCounter = 0
         } else {
@@ -139,6 +208,11 @@ class ChessGame {
         return true
     }
 
+    /**
+     * Phong cấp quân Tốt thành một loại quân cờ khác.
+     *
+     * @param toType Loại quân cờ mà Tốt sẽ được phong cấp thành (Hậu, Xe, Tượng, Mã).
+     */
     fun promotePawn(toType: PieceType) {
         pendingPromotion?.let { pos ->
             val piece = board[pos.row][pos.col]
@@ -152,6 +226,12 @@ class ChessGame {
         }
     }
 
+    /**
+     * Tính toán các nước đi hợp lệ cho một quân cờ.
+     *
+     * @param piece Quân cờ cần tính toán nước đi.
+     * @return Danh sách các nước đi hợp lệ.
+     */
     private fun calculateValidMoves(piece: ChessPiece): List<Move> {
         val rawMoves = calculateRawMoves(piece)
         val validMoves = rawMoves.filter { move ->
@@ -172,6 +252,13 @@ class ChessGame {
         return validMoves
     }
 
+    /**
+     * Tính toán các nước đi thô (chưa kiểm tra hợp lệ) cho một quân cờ.
+     *
+     * @param piece Quân cờ cần tính toán.
+     * @param forCheck Cho biết liệu tính toán có dành cho việc kiểm tra chiếu vua hay không.
+     * @return Danh sách các nước đi thô.
+     */
     private fun calculateRawMoves(piece: ChessPiece, forCheck: Boolean = false): List<Move> {
         val moves = mutableListOf<Move>()
         when (piece.type) {
@@ -282,6 +369,12 @@ class ChessGame {
         return moves
     }
 
+    /**
+     * Tính toán các nước đi nhập thành cho Vua.
+     *
+     * @param piece Quân Vua cần kiểm tra.
+     * @return Danh sách các nước đi nhập thành hợp lệ.
+     */
     private fun calculateCastlingMoves(piece: ChessPiece): List<Move> {
         val moves = mutableListOf<Move>()
         if (piece.type == PieceType.KING && !isKingInCheck(piece.color)) {
@@ -318,6 +411,13 @@ class ChessGame {
         return moves
     }
 
+    /**
+     * Kiểm tra xem một ô có đang bị tấn công bởi quân đối thủ hay không.
+     *
+     * @param color Màu của người chơi cần kiểm tra.
+     * @param position Vị trí ô cần kiểm tra.
+     * @return True nếu ô bị tấn công, false nếu không.
+     */
     private fun isSquareUnderAttack(color: PieceColor, position: Position): Boolean {
         val opponentColor = if (color == PieceColor.WHITE) PieceColor.BLACK else PieceColor.WHITE
         for (row in 0 until 8) {
@@ -332,6 +432,13 @@ class ChessGame {
         return false
     }
 
+    /**
+     * Kiểm tra xem một nước đi có đặt Vua của bên mình vào thế bị chiếu hay không.
+     *
+     * @param piece Quân cờ được di chuyển.
+     * @param to Vị trí đích của nước đi.
+     * @return True nếu nước đi đặt Vua vào thế bị chiếu, false nếu không.
+     */
     private fun movePutsKingInCheck(piece: ChessPiece, to: Position): Boolean {
         val from = piece.position
         val originalPiece = board[from.row][from.col]
@@ -356,11 +463,23 @@ class ChessGame {
         return inCheck
     }
 
+    /**
+     * Cập nhật vị trí của Vua.
+     *
+     * @param color Màu của Vua (TRẮNG hoặc ĐEN).
+     * @param newPosition Vị trí mới của Vua.
+     */
     private fun updateKingPosition(color: PieceColor, newPosition: Position) {
         if (color == PieceColor.WHITE) whiteKingPosition = newPosition
         else blackKingPosition = newPosition
     }
 
+    /**
+     * Kiểm tra xem Vua của một bên có đang bị chiếu hay không.
+     *
+     * @param color Màu của Vua cần kiểm tra.
+     * @return True nếu Vua bị chiếu, false nếu không.
+     */
     private fun isKingInCheck(color: PieceColor): Boolean {
         val kingPos = if (color == PieceColor.WHITE) whiteKingPosition else blackKingPosition
         val opponentColor = if (color == PieceColor.WHITE) PieceColor.BLACK else PieceColor.WHITE
@@ -376,17 +495,39 @@ class ChessGame {
         return false
     }
 
+    /**
+     * Kiểm tra xem một vị trí có nằm trong giới hạn bàn cờ hay không.
+     *
+     * @param row Chỉ số hàng.
+     * @param col Chỉ số cột.
+     * @return True nếu vị trí hợp lệ, false nếu không.
+     */
     private fun isInBounds(row: Int, col: Int): Boolean = row in 0 until 8 && col in 0 until 8
 
+    /**
+     * Kiểm tra xem một ô có phải là ô sáng (light square) hay không.
+     *
+     * @param row Chỉ số hàng.
+     * @param col Chỉ số cột.
+     * @return True nếu là ô sáng, false nếu là ô tối.
+     */
     private fun isLightSquare(row: Int, col: Int): Boolean {
         return (row + col) % 2 == 1
     }
 
+    /**
+     * Lưu trạng thái hiện tại của bàn cờ vào lịch sử để kiểm tra lặp lại.
+     */
     private fun saveBoardState() {
         val state = getBoardStateHash()
         positionHistory[state] = positionHistory.getOrDefault(state, 0) + 1
     }
 
+    /**
+     * Tạo một chuỗi băm đại diện cho trạng thái hiện tại của bàn cờ.
+     *
+     * @return Chuỗi băm trạng thái bàn cờ.
+     */
     private fun getBoardStateHash(): String {
         val sb = StringBuilder()
         for (row in 0 until 8) {
@@ -410,6 +551,9 @@ class ChessGame {
         return sb.toString()
     }
 
+    /**
+     * Kiểm tra trạng thái ván cờ để xác định kết quả (thắng, hòa, hoặc tiếp tục).
+     */
     private fun checkGameState() {
         val pieces = mutableListOf<ChessPiece>()
         for (row in 0 until 8) {
@@ -483,7 +627,7 @@ class ChessGame {
             }
             if (!kingFound) {
                 isGameOver = true
-                gameResult = "Game ended due to missing king for $currentTurn"
+                gameResult = "Ván cờ kết thúc do thiếu Vua của $currentTurn"
                 return
             }
         }
@@ -499,11 +643,18 @@ class ChessGame {
         }
     }
 
-    // Hàm công khai để gọi checkGameState từ bên ngoài
+    /**
+     * Hàm công khai để gọi kiểm tra trạng thái ván cờ từ bên ngoài.
+     */
     fun updateGameState() {
         checkGameState()
     }
 
+    /**
+     * Kiểm tra xem có phải là thế chiếu hết hay không.
+     *
+     * @return True nếu là chiếu hết, false nếu không.
+     */
     private fun isCheckmate(): Boolean {
         for (row in 0 until 8) {
             for (col in 0 until 8) {
@@ -517,6 +668,11 @@ class ChessGame {
         return true
     }
 
+    /**
+     * Kiểm tra xem có phải là thế cờ chết (stalemate) hay không.
+     *
+     * @return True nếu là thế cờ chết, false nếu không.
+     */
     private fun isStalemate(): Boolean {
         for (row in 0 until 8) {
             for (col in 0 until 8) {
@@ -530,59 +686,141 @@ class ChessGame {
         return true
     }
 
-    // Getter và Setter cho đồng bộ với OnlineChessViewModel
+    // Các getter và setter để đồng bộ với OnlineChessViewModel
+    /**
+     * Lấy trạng thái hiện tại của bàn cờ.
+     */
     fun getBoard(): Array<Array<ChessPiece?>> = board
+
+    /**
+     * Lấy lượt đi hiện tại.
+     */
     fun getCurrentTurn(): PieceColor = currentTurn
+
+    /**
+     * Kiểm tra xem ván cờ đã kết thúc hay chưa.
+     */
     fun isGameOver(): Boolean = isGameOver
+
+    /**
+     * Lấy kết quả của ván cờ.
+     */
     fun getGameResult(): String? = gameResult
+
+    /**
+     * Lấy vị trí của quân Tốt đang chờ phong cấp.
+     */
     fun getPendingPromotion(): Position? = pendingPromotion
+
+    /**
+     * Lấy giá trị bộ đếm 50 nước.
+     */
     fun getFiftyMoveCounter(): Int = fiftyMoveCounter
+
+    /**
+     * Thiết lập giá trị bộ đếm 50 nước.
+     */
     fun setFiftyMoveCounter(value: Int) {
         fiftyMoveCounter = value
     }
+
+    /**
+     * Lấy danh sách các trạng thái bàn cờ đã được lưu.
+     */
     fun getPositionHistory(): List<String> = positionHistory.keys.toList()
+
+    /**
+     * Thiết lập lịch sử trạng thái bàn cờ.
+     */
     fun setPositionHistory(history: List<String>) {
         positionHistory.clear()
         history.forEach { pos ->
             positionHistory[pos] = positionHistory[pos]?.plus(1) ?: 1
         }
     }
+
+    /**
+     * Thiết lập lượt đi hiện tại.
+     */
     fun setCurrentTurn(turn: PieceColor) {
         currentTurn = turn
     }
+
+    /**
+     * Lấy vị trí của Vua trắng.
+     */
     fun getWhiteKingPosition(): Position = whiteKingPosition
+
+    /**
+     * Lấy vị trí của Vua đen.
+     */
     fun getBlackKingPosition(): Position = blackKingPosition
+
+    /**
+     * Lấy trạng thái di chuyển của các quân cờ.
+     */
     fun getHasMoved(): Map<String, Boolean> = hasMoved
+
+    /**
+     * Thiết lập vị trí của Vua trắng.
+     */
     fun setWhiteKingPosition(position: Position) {
         whiteKingPosition = position
     }
+
+    /**
+     * Thiết lập vị trí của Vua đen.
+     */
     fun setBlackKingPosition(position: Position) {
         blackKingPosition = position
     }
+
+    /**
+     * Thiết lập trạng thái di chuyển của một quân cờ.
+     */
     fun setHasMoved(key: String, value: Boolean) {
         hasMoved[key] = value
     }
+
+    /**
+     * Thiết lập nước đi cuối cùng.
+     */
     fun setLastMove(from: Position?, to: Position?) {
         lastMove = if (from != null && to != null) Pair(from, to) else null
     }
 
-    // Thêm các phương thức public để truy cập logic private
+    // Các phương thức công khai để truy cập logic riêng
+    /**
+     * Kiểm tra xem Vua có đang bị chiếu hay không (công khai).
+     */
     fun isKingInCheckPublic(color: PieceColor): Boolean {
         return isKingInCheck(color)
     }
 
+    /**
+     * Kiểm tra xem có phải là chiếu hết hay không (công khai).
+     */
     fun isCheckmatePublic(): Boolean {
         return isCheckmate()
     }
 
+    /**
+     * Kiểm tra xem có phải là thế cờ chết hay không (công khai).
+     */
     fun isStalematePublic(): Boolean {
         return isStalemate()
     }
 
+    /**
+     * Kiểm tra xem ván cờ có hòa theo luật 50 nước hay không (công khai).
+     */
     fun isDrawByFiftyMoveRulePublic(): Boolean {
         return fiftyMoveCounter >= 50
     }
 
+    /**
+     * Kiểm tra xem ván cờ có hòa do lặp lại vị trí hay không (công khai).
+     */
     fun isDrawByRepetitionPublic(): Boolean {
         return positionHistory.values.any { it >= 3 }
     }

@@ -11,19 +11,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import android.util.Log
 
+/**
+ * Dữ liệu kết hợp bạn bè với tin nhắn cuối cùng và trạng thái chưa đọc.
+ */
 data class FriendWithLastMessage(
     val friend: User,
     val lastMessage: ChatMessage? = null,
     val hasUnread: Boolean = false
 )
 
+/**
+ * ViewModel quản lý chức năng trò chuyện, bao gồm tải danh sách bạn bè, tin nhắn và trạng thái chưa đọc.
+ */
 class ChatViewModel : ViewModel() {
+    // Danh sách bạn bè với tin nhắn cuối cùng
     private val _friendsWithMessages = MutableStateFlow<List<FriendWithLastMessage>>(emptyList())
     val friendsWithMessages: StateFlow<List<FriendWithLastMessage>> get() = _friendsWithMessages
 
+    // Danh sách tin nhắn trong cuộc trò chuyện hiện tại
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> get() = _messages
 
+    // Trạng thái có tin nhắn chưa đọc
     private val _hasUnreadMessages = MutableStateFlow(false)
     val hasUnreadMessages: StateFlow<Boolean> get() = _hasUnreadMessages
 
@@ -34,12 +43,16 @@ class ChatViewModel : ViewModel() {
     private var friendsListener: ListenerRegistration? = null
     private var currentConversationId: String? = null
 
+    // ID của người dùng hiện tại
     val currentUserId: String? get() = auth.currentUser?.uid
 
     init {
         loadFriendsWithMessages()
     }
 
+    /**
+     * Tải danh sách bạn bè cùng với tin nhắn cuối cùng và trạng thái chưa đọc.
+     */
     fun loadFriendsWithMessages() {
         val currentUserId = auth.currentUser?.uid ?: return
 
@@ -63,7 +76,7 @@ class ChatViewModel : ViewModel() {
 
                         val allDocs = result1.documents + result2.documents
                         val friendList = mutableListOf<FriendWithLastMessage>()
-                        val currentFriendIds = mutableSetOf<String>() // Lưu trữ danh sách friendId hiện tại
+                        val currentFriendIds = mutableSetOf<String>()
 
                         allDocs.forEach { doc ->
                             val user1 = doc.getString("user1")
@@ -104,7 +117,6 @@ class ChatViewModel : ViewModel() {
                                                         msg.senderId != currentUserId && !msg.readBy.contains(currentUserId)
                                                     } ?: false
 
-                                                    // Chỉ thêm hoặc cập nhật friend nếu friendId vẫn tồn tại trong currentFriendIds
                                                     if (friendId in currentFriendIds) {
                                                         friendList.removeAll { it.friend.userId == friendId }
                                                         friendList.add(FriendWithLastMessage(friend, lastMessage, hasUnread))
@@ -122,7 +134,6 @@ class ChatViewModel : ViewModel() {
                             }
                         }
 
-                        // Xóa các friend không còn trong currentFriendIds khỏi friendList
                         friendList.removeAll { it.friend.userId !in currentFriendIds }
                         _friendsWithMessages.value = friendList.sortedBy { it.lastMessage?.timestamp ?: 0L }.reversed()
 
@@ -135,6 +146,11 @@ class ChatViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Lắng nghe tin nhắn trong cuộc trò chuyện với một người bạn.
+     *
+     * @param friendId ID của người bạn trong cuộc trò chuyện.
+     */
     fun listenToChatMessages(friendId: String) {
         val currentUserId = auth.currentUser?.uid ?: return
         val conversationId = getConversationId(currentUserId, friendId)
@@ -168,12 +184,17 @@ class ChatViewModel : ViewModel() {
                 messages.sortWith(compareBy({ it.timestamp }, { it.sequence }))
                 _messages.value = messages
 
-                // Cập nhật hasUnreadMessages dựa trên tất cả bạn bè để đảm bảo tính nhất quán
                 loadFriendsWithMessages()
                 Log.d("ChatViewModel", "Messages loaded: ${messages.size}")
             }
     }
 
+    /**
+     * Gửi tin nhắn tới một người bạn.
+     *
+     * @param friendId ID của người bạn nhận tin nhắn.
+     * @param message Nội dung tin nhắn.
+     */
     fun sendMessage(friendId: String, message: String) {
         val currentUserId = auth.currentUser?.uid ?: return
         if (message.trim().isEmpty() || message.length > 200) return
@@ -198,6 +219,11 @@ class ChatViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Đánh dấu các tin nhắn trong cuộc trò chuyện với một người bạn là đã đọc.
+     *
+     * @param friendId ID của người bạn trong cuộc trò chuyện.
+     */
     fun markMessagesAsRead(friendId: String) {
         val currentUserId = auth.currentUser?.uid ?: return
         val conversationId = getConversationId(currentUserId, friendId)
@@ -229,10 +255,20 @@ class ChatViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Tạo ID cuộc trò chuyện dựa trên ID của hai người dùng.
+     *
+     * @param userId1 ID của người dùng thứ nhất.
+     * @param userId2 ID của người dùng thứ hai.
+     * @return ID cuộc trò chuyện duy nhất.
+     */
     fun getConversationId(userId1: String, userId2: String): String {
         return if (userId1 < userId2) "${userId1}_${userId2}" else "${userId2}_${userId1}"
     }
 
+    /**
+     * Dọn dẹp các listener khi ViewModel bị hủy.
+     */
     override fun onCleared() {
         super.onCleared()
         chatListener?.remove()
@@ -241,6 +277,9 @@ class ChatViewModel : ViewModel() {
     }
 }
 
+/**
+ * Factory để tạo ChatViewModel.
+ */
 class ChatViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {

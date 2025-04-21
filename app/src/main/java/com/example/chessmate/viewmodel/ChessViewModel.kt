@@ -8,17 +8,33 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 
+/**
+ * ViewModel quản lý logic trò chơi cờ vua khi đấu với AI.
+ */
 class ChessViewModel : ViewModel() {
     private val game = ChessGame()
 
+    // Trạng thái bàn cờ
     val board = mutableStateOf(game.getBoard())
+    // Lượt đi hiện tại
     val currentTurn = mutableStateOf(game.getCurrentTurn())
+    // Các ô được đánh dấu (nước đi hợp lệ)
     val highlightedSquares = mutableStateOf<List<Move>>(emptyList())
+    // Trạng thái trò chơi kết thúc
     val isGameOver = mutableStateOf(game.isGameOver())
+    // Kết quả trò chơi
     val gameResult = mutableStateOf<String?>(null)
+    // Trạng thái đang phong cấp
     val isPromoting = mutableStateOf(false)
-    val playerColor = mutableStateOf(PieceColor.WHITE) // Thêm playerColor, mặc định là WHITE
+    // Màu của người chơi, mặc định là trắng
+    val playerColor = mutableStateOf(PieceColor.WHITE)
 
+    /**
+     * Xử lý sự kiện nhấn vào một ô trên bàn cờ.
+     *
+     * @param row Hàng của ô.
+     * @param col Cột của ô.
+     */
     fun onSquareClicked(row: Int, col: Int) {
         val position = Position(row, col)
         if (highlightedSquares.value.any { it.position == position }) {
@@ -36,6 +52,11 @@ class ChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Phong cấp Tốt thành một loại quân cờ.
+     *
+     * @param toType Loại quân cờ để phong cấp.
+     */
     fun promotePawn(toType: PieceType) {
         game.promotePawn(toType)
         isPromoting.value = false
@@ -45,6 +66,9 @@ class ChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Cập nhật trạng thái trò chơi (bàn cờ, lượt đi, kết quả).
+     */
     private fun updateGameState() {
         board.value = game.getBoard()
         currentTurn.value = game.getCurrentTurn()
@@ -52,6 +76,9 @@ class ChessViewModel : ViewModel() {
         gameResult.value = game.getGameResult()
     }
 
+    /**
+     * Kích hoạt nước đi của AI khi đến lượt đen.
+     */
     private fun triggerAIMove() {
         viewModelScope.launch {
             val bestMove = findBestMove()
@@ -68,6 +95,11 @@ class ChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Tìm nước đi tốt nhất cho AI (ưu tiên bắt quân có giá trị cao nhất).
+     *
+     * @return Cặp vị trí (từ, đến) hoặc null nếu không có nước đi.
+     */
     private fun findBestMove(): Pair<Position, Position>? {
         val allMoves = getAllMoves(PieceColor.BLACK)
         if (allMoves.isEmpty()) return null
@@ -97,6 +129,12 @@ class ChessViewModel : ViewModel() {
         return bestMove ?: allMoves.random()
     }
 
+    /**
+     * Lấy tất cả nước đi hợp lệ của một màu quân.
+     *
+     * @param color Màu của quân cờ.
+     * @return Danh sách cặp vị trí (từ, đến).
+     */
     private fun getAllMoves(color: PieceColor): List<Pair<Position, Position>> {
         val allMoves = mutableListOf<Pair<Position, Position>>()
         for (row in 0 until 8) {
@@ -113,27 +151,47 @@ class ChessViewModel : ViewModel() {
         return allMoves
     }
 
+    /**
+     * Lấy vị trí của Tốt đang chờ phong cấp.
+     *
+     * @return Vị trí của Tốt hoặc null nếu không có.
+     */
     fun getPendingPromotion(): Position? = game.getPendingPromotion()
 }
 
+/**
+ * ViewModel quản lý logic trò chơi cờ vua khi đấu với bạn bè.
+ */
 class FriendChessViewModel : ViewModel() {
     private val game = ChessGame()
 
+    // Trạng thái bàn cờ
     val board = mutableStateOf(game.getBoard())
+    // Lượt đi hiện tại
     val currentTurn = mutableStateOf(game.getCurrentTurn())
+    // Các ô được đánh dấu (nước đi hợp lệ)
     val highlightedSquares = mutableStateOf<List<Move>>(emptyList())
+    // Trạng thái trò chơi kết thúc
     val isGameOver = mutableStateOf(game.isGameOver())
+    // Kết quả trò chơi
     val gameResult = mutableStateOf<String?>(null)
+    // Thời gian còn lại của người chơi trắng
     val whiteTime = mutableStateOf(600)
+    // Thời gian còn lại của người chơi đen
     val blackTime = mutableStateOf(600)
+    // Trạng thái đang phong cấp
     val isPromoting = mutableStateOf(false)
-    val playerColor = mutableStateOf(PieceColor.WHITE) // Thêm playerColor, mặc định là WHITE
+    // Màu của người chơi, mặc định là trắng
+    val playerColor = mutableStateOf(PieceColor.WHITE)
     private var timerJob: Job? = null
 
     init {
         startTimer()
     }
 
+    /**
+     * Khởi động bộ đếm thời gian cho trận đấu.
+     */
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -158,6 +216,12 @@ class FriendChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Xử lý sự kiện nhấn vào một ô trên bàn cờ.
+     *
+     * @param row Hàng của ô.
+     * @param col Cột của ô.
+     */
     fun onSquareClicked(row: Int, col: Int) {
         if (isPromoting.value) return
 
@@ -178,6 +242,11 @@ class FriendChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Phong cấp Tốt thành một loại quân cờ.
+     *
+     * @param toType Loại quân cờ để phong cấp.
+     */
     fun promotePawn(toType: PieceType) {
         game.promotePawn(toType)
         isPromoting.value = false
@@ -185,6 +254,9 @@ class FriendChessViewModel : ViewModel() {
         startTimer()
     }
 
+    /**
+     * Cập nhật trạng thái trò chơi (bàn cờ, lượt đi, kết quả).
+     */
     private fun updateGameState() {
         board.value = game.getBoard()
         currentTurn.value = game.getCurrentTurn()
@@ -192,8 +264,16 @@ class FriendChessViewModel : ViewModel() {
         gameResult.value = game.getGameResult()
     }
 
+    /**
+     * Lấy vị trí của Tốt đang chờ phong cấp.
+     *
+     * @return Vị trí của Tốt hoặc null nếu không có.
+     */
     fun getPendingPromotion(): Position? = game.getPendingPromotion()
 
+    /**
+     * Dọn dẹp tài nguyên khi ViewModel bị hủy.
+     */
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()

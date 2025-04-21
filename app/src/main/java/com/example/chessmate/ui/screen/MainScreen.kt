@@ -28,6 +28,12 @@ import com.example.chessmate.viewmodel.ChessViewModel
 import com.example.chessmate.viewmodel.FindFriendsViewModel
 import com.google.firebase.auth.FirebaseAuth
 
+/**
+ * Hiển thị hàng nút chính trên màn hình chính.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param hasPendingRequests True nếu có lời mời kết bạn đang chờ.
+ */
 @Composable
 fun MainButtonRow(
     navController: NavController,
@@ -87,6 +93,14 @@ fun MainButtonRow(
     }
 }
 
+/**
+ * Màn hình chính của ứng dụng, hiển thị các tùy chọn chơi và bàn cờ mẫu.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param viewModel ViewModel quản lý logic bàn cờ.
+ * @param friendViewModel ViewModel quản lý danh sách bạn bè.
+ * @param chatViewModel ViewModel quản lý tin nhắn.
+ */
 @Composable
 fun MainScreen(
     navController: NavController,
@@ -105,7 +119,6 @@ fun MainScreen(
             }
         }
         friendViewModel.loadReceivedRequests()
-        // Xóa chatViewModel.loadFriendsWithMessages() vì đã gọi trong MainActivity
     }
 
     Scaffold(
@@ -125,7 +138,7 @@ fun MainScreen(
             Header(
                 navController = navController,
                 viewModel = chatViewModel,
-                centerContent = { Spacer(modifier = Modifier) } // Không dùng weight ở đây
+                centerContent = { Spacer(modifier = Modifier) }
             )
             Logo()
             Spacer(modifier = Modifier.height(20.dp))

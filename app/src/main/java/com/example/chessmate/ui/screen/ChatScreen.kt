@@ -23,6 +23,13 @@ import com.example.chessmate.viewmodel.FriendWithLastMessage
 import java.net.URLEncoder
 import android.util.Log
 
+/**
+ * Màn hình danh sách bạn bè với tin nhắn gần nhất.
+ *
+ * @param navController Điều hướng đến các màn hình khác.
+ * @param viewModel ViewModel quản lý tin nhắn.
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ */
 @Composable
 fun ChatScreen(
     navController: NavController? = null,
@@ -86,6 +93,11 @@ fun ChatScreen(
     }
 }
 
+/**
+ * Hiển thị tiêu đề của màn hình danh sách bạn bè.
+ *
+ * @param onBackClick Hàm xử lý khi nhấn nút quay lại.
+ */
 @Composable
 fun ChatHeader(
     onBackClick: () -> Unit
@@ -123,6 +135,14 @@ fun ChatHeader(
     }
 }
 
+/**
+ * Hiển thị một mục trong danh sách bạn bè với tin nhắn gần nhất.
+ *
+ * @param friendWithMessage Thông tin bạn bè và tin nhắn gần nhất.
+ * @param onClick Hàm xử lý khi nhấn vào mục.
+ * @param navController Điều hướng đến hồ sơ đối thủ.
+ * @param viewModel ViewModel quản lý tin nhắn.
+ */
 @Composable
 fun FriendListItem(
     friendWithMessage: FriendWithLastMessage,
@@ -133,7 +153,7 @@ fun FriendListItem(
     val friend = friendWithMessage.friend
     val lastMessage = friendWithMessage.lastMessage
     val hasUnread = friendWithMessage.hasUnread
-    val currentUserId = viewModel.currentUserId // Lấy currentUserId từ viewModel
+    val currentUserId = viewModel.currentUserId
 
     Row(
         modifier = Modifier

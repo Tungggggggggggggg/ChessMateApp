@@ -30,6 +30,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 
+/**
+ * Màn hình hiển thị khi đang tìm đối thủ trực tuyến.
+ *
+ * @param navController Điều hướng đến màn hình chơi khi tìm được đối thủ.
+ * @param viewModel ViewModel quản lý logic ghép trận trực tuyến.
+ */
 @Composable
 fun LoadingScreen(
     navController: NavController,

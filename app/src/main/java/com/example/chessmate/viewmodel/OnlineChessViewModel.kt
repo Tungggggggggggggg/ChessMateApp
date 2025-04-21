@@ -26,27 +26,46 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * ViewModel quản lý trò chơi cờ vua trực tuyến, bao gồm trạng thái trận đấu, thời gian và tin nhắn.
+ */
 class OnlineChessViewModel : ViewModel() {
     private val db: FirebaseFirestore = Firebase.firestore
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val chessGame = ChessGame()
 
+    // Trạng thái bàn cờ
     val board = mutableStateOf(chessGame.getBoard())
+    // Lượt đi hiện tại
     val currentTurn = mutableStateOf(chessGame.getCurrentTurn())
+    // Các ô được đánh dấu (nước đi hợp lệ)
     val highlightedSquares = mutableStateOf<List<Move>>(emptyList())
+    // Trạng thái trò chơi kết thúc
     val isGameOver = mutableStateOf(chessGame.isGameOver())
+    // Kết quả trò chơi
     val gameResult = mutableStateOf<String?>(chessGame.getGameResult())
+    // Thời gian còn lại của người chơi trắng
     val whiteTime = mutableStateOf(600)
+    // Thời gian còn lại của người chơi đen
     val blackTime = mutableStateOf(600)
+    // Trạng thái đang phong cấp
     val isPromoting = mutableStateOf(false)
+    // ID của trận đấu
     val matchId = mutableStateOf<String?>(null)
+    // Màu của người chơi
     val playerColor = mutableStateOf<PieceColor?>(null)
+    // Yêu cầu hòa
     val drawRequest = mutableStateOf<String?>(null)
+    // Lịch sử nước đi
     val moveHistory = mutableStateListOf<String>()
+    // Danh sách tin nhắn trong trận đấu
     val chatMessages = mutableStateListOf<ChatMessage>()
+    // Trạng thái có tin nhắn chưa đọc
     val hasUnreadMessages = mutableStateOf(false)
+    // Dữ liệu trận đấu từ Firestore
     private val matchData = mutableStateOf<Map<String, Any>?>(null)
+    // Thông báo lỗi khi ghép trận
     val matchmakingError = mutableStateOf<String?>(null)
 
     private var timerJob: Job? = null
@@ -58,6 +77,9 @@ class OnlineChessViewModel : ViewModel() {
     private var lastMoveByThisDevice = false
     private var messageSequence = 0L
 
+    /**
+     * Trạng thái của trận đấu.
+     */
     sealed class MatchStatus {
         object Ongoing : MatchStatus()
         object Draw : MatchStatus()
@@ -90,6 +112,9 @@ class OnlineChessViewModel : ViewModel() {
         startMatchmaking()
     }
 
+    /**
+     * Bắt đầu quá trình ghép trận.
+     */
     fun startMatchmaking() {
         val userId = auth.currentUser?.uid ?: run {
             matchmakingError.value = "Vui lòng đăng nhập để chơi trực tuyến."
@@ -120,6 +145,11 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Lắng nghe trạng thái ghép trận từ Firestore.
+     *
+     * @param userId ID của người dùng.
+     */
     private fun listenForMatchmaking(userId: String) {
         matchmakingListener?.remove()
         matchmakingListener = db.collection("matchmaking_queue")
@@ -173,6 +203,12 @@ class OnlineChessViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Thử ghép trận với một đối thủ đang chờ.
+     *
+     * @param userId ID của người dùng hiện tại.
+     * @return True nếu ghép trận thành công, False nếu không.
+     */
     private suspend fun tryMatchWithOpponent(userId: String): Boolean {
         return try {
             val snapshot = db.collection("matchmaking_queue")
@@ -255,6 +291,11 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Thử ghép trận liên tục trong một khoảng thời gian.
+     *
+     * @param userId ID của người dùng hiện tại.
+     */
     private fun tryMatchmaking(userId: String) {
         matchmakingJob?.cancel()
         matchmakingJob = viewModelScope.launch {
@@ -275,6 +316,9 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Lắng nghe cập nhật trận đấu từ Firestore.
+     */
     fun listenToMatchUpdates() {
         matchId.value?.let { id ->
             matchListener?.remove()
@@ -393,6 +437,9 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Khởi động bộ đếm thời gian cho trận đấu.
+     */
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
@@ -451,6 +498,9 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Lắng nghe tin nhắn trong trận đấu.
+     */
     fun listenToChatMessages() {
         matchId.value?.let { id ->
             chatListener?.remove()
@@ -472,12 +522,10 @@ class OnlineChessViewModel : ViewModel() {
                         val readBy = doc.get("readBy") as? List<String> ?: emptyList()
                         messages.add(doc.id to ChatMessage(senderId, message, timestamp, sequence, readBy))
                     }
-                    // Sắp xếp theo timestamp, sau đó theo sequence để đảm bảo thứ tự
                     messages.sortWith(compareBy({ it.second.timestamp }, { it.second.sequence }))
                     chatMessages.clear()
                     chatMessages.addAll(messages.map { it.second })
 
-                    // Kiểm tra tin nhắn chưa đọc
                     val currentUserId = auth.currentUser?.uid
                     if (currentUserId != null) {
                         hasUnreadMessages.value = chatMessages.any { message ->
@@ -488,6 +536,11 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Gửi tin nhắn trong trận đấu.
+     *
+     * @param message Nội dung tin nhắn.
+     */
     fun sendMessage(message: String) {
         val userId = auth.currentUser?.uid ?: return
         if (message.trim().isEmpty() || message.length > 200) return
@@ -509,12 +562,14 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Đánh dấu tất cả tin nhắn trong trận đấu là đã đọc.
+     */
     fun markMessagesAsRead() {
         val currentUserId = auth.currentUser?.uid ?: return
         matchId.value?.let { id ->
             viewModelScope.launch {
                 try {
-                    // Lấy tất cả tin nhắn không phải do người dùng hiện tại gửi
                     val snapshot = db.collection("matches")
                         .document(id)
                         .collection("chat_messages")
@@ -522,13 +577,11 @@ class OnlineChessViewModel : ViewModel() {
                         .get()
                         .await()
 
-                    // Lọc các tin nhắn chưa có currentUserId trong readBy
                     val unreadMessages = snapshot.documents.filter { doc ->
                         val readBy = doc.get("readBy") as? List<String> ?: emptyList()
                         !readBy.contains(currentUserId)
                     }
 
-                    // Cập nhật readBy trong một giao dịch
                     if (unreadMessages.isNotEmpty()) {
                         db.runTransaction { transaction ->
                             for (doc in unreadMessages) {
@@ -547,6 +600,12 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Xử lý sự kiện nhấn vào một ô trên bàn cờ.
+     *
+     * @param row Hàng của ô.
+     * @param col Cột của ô.
+     */
     fun onSquareClicked(row: Int, col: Int) {
         if (isPromoting.value || playerColor.value != currentTurn.value || matchId.value == null) {
             return
@@ -635,6 +694,11 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Phong cấp Tốt thành một loại quân cờ.
+     *
+     * @param toType Loại quân cờ để phong cấp.
+     */
     fun promotePawn(toType: PieceType) {
         chessGame.promotePawn(toType)
         lastMoveByThisDevice = true
@@ -698,6 +762,9 @@ class OnlineChessViewModel : ViewModel() {
         startTimer()
     }
 
+    /**
+     * Yêu cầu hòa trận đấu.
+     */
     fun requestDraw() {
         matchId.value?.let { id ->
             db.collection("matches")
@@ -706,10 +773,16 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Chấp nhận yêu cầu hòa.
+     */
     fun acceptDraw() {
         endMatch(status = MatchStatus.Draw, winner = null, drawReason = "Hòa do thỏa thuận giữa hai người chơi.")
     }
 
+    /**
+     * Từ chối yêu cầu hòa.
+     */
     fun declineDraw() {
         matchId.value?.let { id ->
             db.collection("matches")
@@ -718,6 +791,9 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Đầu hàng trận đấu.
+     */
     fun surrender() {
         val opponentId = if (playerColor.value == PieceColor.WHITE) {
             matchData.value?.get("player2") as? String
@@ -727,6 +803,13 @@ class OnlineChessViewModel : ViewModel() {
         endMatch(status = MatchStatus.Surrendered, winner = opponentId)
     }
 
+    /**
+     * Cập nhật điểm số của người chơi dựa trên kết quả trận đấu.
+     *
+     * @param player1Id ID của người chơi 1.
+     * @param player2Id ID của người chơi 2.
+     * @param winner ID của người thắng (nếu có).
+     */
     private suspend fun updateScores(player1Id: String, player2Id: String, winner: String?) {
         try {
             db.runTransaction { transaction ->
@@ -736,8 +819,8 @@ class OnlineChessViewModel : ViewModel() {
                 val player1Doc = transaction.get(player1Ref)
                 val player2Doc = transaction.get(player2Ref)
 
-                val player1Score = (player1Doc.getLong("score") ?: 0).toInt()
-                val player2Score = (player2Doc.getLong("score") ?: 0).toInt()
+                val player1Score = (player1Doc.getLong("score") ?.toInt() ?: 0)
+                val player2Score = (player2Doc.getLong("score") ?.toInt() ?: 0)
 
                 when {
                     winner == player1Id -> {
@@ -756,6 +839,14 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Lưu lịch sử trận đấu cho cả hai người chơi.
+     *
+     * @param player1Id ID của người chơi 1.
+     * @param player2Id ID của người chơi 2.
+     * @param status Trạng thái trận đấu.
+     * @param winner ID của người thắng (nếu có).
+     */
     private suspend fun saveMatchHistory(player1Id: String, player2Id: String, status: MatchStatus, winner: String?) {
         try {
             val player1Doc = db.collection("users").document(player1Id).get().await()
@@ -806,6 +897,13 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Kết thúc trận đấu và cập nhật trạng thái.
+     *
+     * @param status Trạng thái trận đấu.
+     * @param winner ID của người thắng (nếu có).
+     * @param drawReason Lý do hòa (nếu có).
+     */
     private fun endMatch(status: MatchStatus, winner: String?, drawReason: String? = null) {
         matchId.value?.let { id ->
             val updateData = mutableMapOf<String, Any?>(
@@ -839,6 +937,11 @@ class OnlineChessViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Tạo bàn cờ ban đầu.
+     *
+     * @return Ma trận 8x8 chứa các quân cờ ban đầu.
+     */
     private fun createInitialBoard(): Array<Array<ChessPiece?>> {
         val newBoard = Array(8) { Array<ChessPiece?>(8) { null } }
         newBoard[0][0] = ChessPiece(PieceType.ROOK, PieceColor.WHITE, Position(0, 0))
@@ -866,6 +969,12 @@ class OnlineChessViewModel : ViewModel() {
         return newBoard
     }
 
+    /**
+     * Chuyển bàn cờ thành danh sách phẳng để lưu vào Firestore.
+     *
+     * @param board Ma trận bàn cờ.
+     * @return Danh sách các bản đồ chứa thông tin quân cờ.
+     */
     private fun boardToFlatMap(board: Array<Array<ChessPiece?>>): List<Map<String, Any?>> {
         val flatList = mutableListOf<Map<String, Any?>>()
         for (row in board.indices) {
@@ -888,6 +997,12 @@ class OnlineChessViewModel : ViewModel() {
         return flatList
     }
 
+    /**
+     * Chuyển danh sách phẳng thành ma trận bàn cờ.
+     *
+     * @param boardData Danh sách các bản đồ chứa thông tin quân cờ.
+     * @return Ma trận 8x8 chứa các quân cờ.
+     */
     private fun flatMapToBoard(boardData: List<Map<String, Any?>>): Array<Array<ChessPiece?>> {
         val newBoard = Array(8) { Array<ChessPiece?>(8) { null } }
         for (pieceData in boardData) {
@@ -909,28 +1024,39 @@ class OnlineChessViewModel : ViewModel() {
         return newBoard
     }
 
+    /**
+     * Chuyển vị trí trên bàn cờ thành chuỗi ký hiệu (ví dụ: e4).
+     *
+     * @param position Vị trí trên bàn cờ.
+     * @return Chuỗi ký hiệu vị trí.
+     */
     private fun positionToString(position: Position): String {
         val col = ('a' + position.col).toString()
         val row = (8 - position.row).toString()
         return "$col$row"
     }
 
+    /**
+     * Hủy quá trình ghép trận và xóa khỏi hàng đợi.
+     */
     fun cancelMatchmaking() {
-        auth.currentUser?.uid?.let { userId ->
-            db.collection("matchmaking_queue").document(userId).delete()
-        }
+        val userId = auth.currentUser?.uid ?: return
+        isMatchmaking.set(false)
         matchmakingJob?.cancel()
         matchmakingListener?.remove()
-        isMatchmaking.set(false)
-        matchmakingError.value = null
+        db.collection("matchmaking_queue").document(userId).delete()
     }
 
+    /**
+     * Dọn dẹp các listener và tài nguyên khi ViewModel bị hủy.
+     */
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
         matchListener?.remove()
         chatListener?.remove()
         matchmakingListener?.remove()
+        matchmakingJob?.cancel()
         cancelMatchmaking()
     }
 }

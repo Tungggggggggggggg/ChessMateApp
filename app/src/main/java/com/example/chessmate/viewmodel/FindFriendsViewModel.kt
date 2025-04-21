@@ -10,22 +10,30 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+/**
+ * ViewModel quản lý chức năng tìm kiếm bạn bè, gửi và xử lý yêu cầu kết bạn.
+ */
 class FindFriendsViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
+    // Kết quả tìm kiếm người dùng
     private val _searchResults = MutableStateFlow<List<User>>(emptyList())
     val searchResults: StateFlow<List<User>> = _searchResults
 
+    // Danh sách yêu cầu kết bạn nhận được
     private val _receivedRequests = MutableStateFlow<List<FriendRequest>>(emptyList())
     val receivedRequests: StateFlow<List<FriendRequest>> = _receivedRequests
 
+    // Danh sách ID của yêu cầu kết bạn đã gửi
     private val _sentRequests = MutableStateFlow<List<String>>(emptyList())
     val sentRequests: StateFlow<List<String>> = _sentRequests
 
+    // Danh sách bạn bè
     private val _friends = MutableStateFlow<List<User>>(emptyList())
     val friends: StateFlow<List<User>> = _friends
 
+    // Listener cho Firestore
     private var friendsListener1: ListenerRegistration? = null
     private var friendsListener2: ListenerRegistration? = null
     private var receivedRequestsListener: ListenerRegistration? = null
@@ -37,11 +45,22 @@ class FindFriendsViewModel : ViewModel() {
         loadSentRequests()
     }
 
+    /**
+     * Chuẩn hóa chuỗi truy vấn để tìm kiếm.
+     *
+     * @param query Chuỗi truy vấn đầu vào.
+     * @return Chuỗi đã được chuẩn hóa (chữ thường, bỏ dấu).
+     */
     private fun normalizeQuery(query: String): String {
         return java.text.Normalizer.normalize(query.lowercase(), java.text.Normalizer.Form.NFD)
             .replace("\\p{M}".toRegex(), "")
     }
 
+    /**
+     * Tìm kiếm người dùng dựa trên từ khóa.
+     *
+     * @param query Từ khóa tìm kiếm.
+     */
     fun searchUsers(query: String) {
         if (query.isBlank()) {
             Log.d("FindFriendsViewModel", "Search query is blank, returning empty results")
@@ -75,6 +94,11 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Gửi yêu cầu kết bạn tới một người dùng.
+     *
+     * @param toUserId ID của người dùng nhận yêu cầu.
+     */
     fun sendFriendRequest(toUserId: String) {
         val fromUserId = auth.currentUser?.uid ?: return
 
@@ -109,6 +133,11 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Hủy yêu cầu kết bạn đã gửi.
+     *
+     * @param toUserId ID của người dùng nhận yêu cầu.
+     */
     fun cancelFriendRequest(toUserId: String) {
         val fromUserId = auth.currentUser?.uid ?: return
         firestore.collection("friend_requests")
@@ -128,6 +157,11 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Xóa bạn bè khỏi danh sách bạn bè.
+     *
+     * @param friendId ID của bạn bè cần xóa.
+     */
     fun removeFriend(friendId: String) {
         val currentUserId = auth.currentUser?.uid ?: return
         firestore.collection("friends")
@@ -163,6 +197,11 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Chấp nhận yêu cầu kết bạn.
+     *
+     * @param request Yêu cầu kết bạn cần chấp nhận.
+     */
     fun acceptFriendRequest(request: FriendRequest) {
         val currentUserId = auth.currentUser?.uid ?: return
         firestore.collection("friend_requests")
@@ -224,6 +263,11 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Từ chối yêu cầu kết bạn.
+     *
+     * @param request Yêu cầu kết bạn cần từ chối.
+     */
     fun declineFriendRequest(request: FriendRequest) {
         firestore.collection("friend_requests")
             .whereEqualTo("fromUserId", request.fromUserId)
@@ -244,6 +288,9 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Tải danh sách bạn bè của người dùng hiện tại.
+     */
     fun loadFriends() {
         val currentUserId = auth.currentUser?.uid ?: return
 
@@ -300,6 +347,9 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Tải danh sách yêu cầu kết bạn nhận được.
+     */
     fun loadReceivedRequests() {
         val currentUserId = auth.currentUser?.uid ?: return
 
@@ -325,6 +375,9 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Tải danh sách yêu cầu kết bạn đã gửi.
+     */
     fun loadSentRequests() {
         val currentUserId = auth.currentUser?.uid ?: return
 
@@ -348,6 +401,9 @@ class FindFriendsViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Dọn dẹp các listener khi ViewModel bị hủy.
+     */
     override fun onCleared() {
         super.onCleared()
         friendsListener1?.remove()
