@@ -8,6 +8,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,12 +27,15 @@ import com.example.chessmate.ui.components.Chessboard
 import com.example.chessmate.ui.components.PromotionDialog
 import com.example.chessmate.viewmodel.ChessViewModel
 
+
 @Composable
 fun PlayWithAIHeader(
     onBackClick: () -> Unit,
     currentTurn: PieceColor,
     modifier: Modifier = Modifier
 ) {
+    var showExitDialog by remember { mutableStateOf(false) }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -43,7 +48,7 @@ fun PlayWithAIHeader(
                 .align(Alignment.TopStart)
                 .size(32.dp)
                 .background(colorResource(id = R.color.color_eed7c5), shape = CircleShape)
-                .clickable(onClick = onBackClick),
+                .clickable { showExitDialog = true },
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -79,6 +84,55 @@ fun PlayWithAIHeader(
                 color = Color.Black
             )
         }
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            modifier = Modifier.background(colorResource(id = R.color.color_c97c5d)),
+            title = {
+                Text(
+                    text = "Thoát trận đấu",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = "Bạn có chắc chắn muốn thoát trận đấu không?",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitDialog = false
+                        onBackClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(id = R.color.color_c89f9c)
+                    )
+                ) {
+                    Text(
+                        text = "OK",
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("Hủy", color = Color.White)
+                }
+            },
+            containerColor = colorResource(id = R.color.color_c97c5d)
+        )
     }
 }
 
